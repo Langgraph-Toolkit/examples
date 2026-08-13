@@ -1,0 +1,17 @@
+{
+  "name": "@langgraph/examples",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx database-chat/test.ts"
+  },
+  "dependencies": {
+    "@langgraph/toolkit": "0.1.0",
+    "@langgraph/toolkit-mcp": "0.1.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1",
+    "typescript": "^5.4.5"
+  }
+}
