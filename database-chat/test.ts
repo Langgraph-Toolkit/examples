@@ -1,4 +1,4 @@
-import { GraphRegistry, MemoryCheckpointer, e2eActor, expectDone, expectInterrupted, type StepEvent } from "@langgraph/toolkit";
+import { GraphRegistry, MemoryCheckpointer, e2eActor, expectDone, expectInterrupted, type StepEvent } from "@langgraph-toolkit/core";
 import { databaseChatGraph } from "./index.js";
 
 const registry = new GraphRegistry();

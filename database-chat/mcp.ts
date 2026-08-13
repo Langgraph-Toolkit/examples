@@ -1,5 +1,5 @@
-import type { McpDiscovery, McpGateway, McpResourceDescriptor, McpToolDescriptor, McpToolResult } from "@langgraph/toolkit-mcp";
-import type { JsonObject, JsonValue } from "@langgraph/toolkit";
+import type { McpDiscovery, McpGateway, McpResourceDescriptor, McpToolDescriptor, McpToolResult } from "@langgraph-toolkit/mcp";
+import type { JsonObject, JsonValue } from "@langgraph-toolkit/core";
 import type { DatabaseRow, DatabaseSchema } from "./types.js";
 
 export interface MemoryDatabaseMcpOptions {

@@ -4,4 +4,4 @@ This repository contains resource-oriented examples for **Langgraph-Toolkit**. T
 
 The example demonstrates schema discovery, query planning, SQL validation, bounded repair, grounding, permissions, approval interrupts, checkpoint resume, and audit records without coupling the workflow to a backend framework.
 
-Package identifiers such as `@langgraph/toolkit` and `@langgraph/toolkit-mcp` remain technical npm identifiers. The product display name is Langgraph-Toolkit.
+Package identifiers such as `@langgraph-toolkit/core` and `@langgraph-toolkit/mcp` remain technical npm identifiers. The product display name is Langgraph-Toolkit.

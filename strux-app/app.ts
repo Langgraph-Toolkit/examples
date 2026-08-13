@@ -1,7 +1,7 @@
 /**
  * examples/strux-app: the same database-chat resource running on StruxJS.
  *
- *   npm install struxjs-core @langgraph/toolkit @langgraph/adapter-struxjs
+ *   npm install struxjs-core @langgraph-toolkit/core @langgraph-toolkit/adapter-struxjs
  *
  * The graph code (examples/shared/agent.ts) is untouched: StruxJS only
  * provides the ServiceProvider, convention scanner and SSE transport.
@@ -11,8 +11,8 @@ import {
   StruxCheckpointer,
   scanAgents,
   streamGraphToReply,
-} from "@langgraph/adapter-struxjs";
-import { GraphRegistry, ToolkitModelRegistry, MockProvider } from "@langgraph/toolkit";
+} from "@langgraph-toolkit/adapter-struxjs";
+import { GraphRegistry, ToolkitModelRegistry, MockProvider } from "@langgraph-toolkit/core";
 import { databaseChatGraph } from "../shared/agent.js";
 
 // 1. Bootstrap the StruxJS application (shape-mocked here; a real StruxJS

@@ -1,5 +1,5 @@
-import { conditional, converge, defineGraph, edge, gate, node, messagesValue, reducedValue } from "@langgraph/toolkit";
-import type { McpGateway } from "@langgraph/toolkit-mcp";
+import { conditional, converge, defineGraph, edge, gate, node, messagesValue, reducedValue } from "@langgraph-toolkit/core";
+import type { McpGateway } from "@langgraph-toolkit/mcp";
 import { resolveDatabaseChatConfig, type DatabaseChatConfig } from "./config.js";
 import { createDatabaseChatNodes } from "./nodes.js";
 import { databaseAnswerSchema, databaseChatInputSchema, databaseInterruptSchema } from "./schemas.js";

@@ -1,4 +1,4 @@
-# @langgraph/toolkit
+# @langgraph-toolkit/core
 
 **Langgraph-Toolkit** is a framework-agnostic TypeScript toolkit for typed graphs, MCP resources, human approval, checkpoints, parallel work, cost control, and production adapters. Define the graph once, then run it on **StruxJS, Express, Fastify, or NestJS** without changing graph logic. The architecture follows the same split as Redux Toolkit: a pure core plus thin host bindings.
 
@@ -15,7 +15,7 @@
 ## Quick start
 
 ```ts
-import { createMcpGateway, fromMcpCredentials } from "@langgraph/toolkit-mcp";
+import { createMcpGateway, fromMcpCredentials } from "@langgraph-toolkit/mcp";
 import { createDatabaseChatGraph } from "./examples/database-chat/graph.js";
 
 const gateway = await createMcpGateway({
@@ -45,7 +45,7 @@ if (paused.stoppedReason === "interrupt") {
 }
 ```
 
-The public npm identifiers remain lowercase and scoped, such as `@langgraph/toolkit` and `@langgraph/toolkit-mcp`, because npm package names are normalized identifiers. **Langgraph-Toolkit** is the product and repository display name.
+The public npm identifiers remain lowercase and scoped, such as `@langgraph-toolkit/core` and `@langgraph-toolkit/mcp`, because npm package names are normalized identifiers. **Langgraph-Toolkit** is the product and repository display name.
 
 ## Graph Engineer rules enforced
 
@@ -73,7 +73,7 @@ Each adapter is under 400 lines. The graph code never imports the host.
 ### StruxJS (primary host)
 
 ```ts
-import { LangGraphServiceProvider } from "@langgraph/adapter-struxjs";
+import { LangGraphServiceProvider } from "@langgraph-toolkit/adapter-struxjs";
 // app/Agents/<workflow>/index.js is auto-scanned at boot, mirroring the StruxJS model.
 app.registerProviders([LangGraphServiceProvider]);
 ```
@@ -81,7 +81,7 @@ app.registerProviders([LangGraphServiceProvider]);
 ### Express
 
 ```ts
-import { langgraphRouter, sseMiddleware } from "@langgraph/adapter-express";
+import { langgraphRouter, sseMiddleware } from "@langgraph-toolkit/adapter-express";
 app.use(express.json());
 app.use(sseMiddleware);
 app.use(langgraphRouter({ graphs: registry, path: "/agents/:name" }));
@@ -92,7 +92,7 @@ app.use(langgraphRouter({ graphs: registry, path: "/agents/:name" }));
 ### Fastify
 
 ```ts
-import { langgraphFastify, decorateLangGraph } from "@langgraph/adapter-fastify";
+import { langgraphFastify, decorateLangGraph } from "@langgraph-toolkit/adapter-fastify";
 decorateLangGraph(fastify, registry); // call BEFORE register
 await fastify.register(langgraphFastify, { path: "/agents/:name" });
 ```
@@ -100,16 +100,16 @@ await fastify.register(langgraphFastify, { path: "/agents/:name" });
 ### NestJS
 
 ```ts
-import { LangGraphModule, LangGraphService } from "@langgraph/adapter-nestjs";
+import { LangGraphModule, LangGraphService } from "@langgraph-toolkit/adapter-nestjs";
 // register the module with your registry once; inject LangGraphService anywhere
 ```
 
 ## Checkpointers on any database
 
-Checkpointers live in `@langgraph/adapter-checkpointers` and take an injected driver, so the package carries zero database dependencies at build time (Redux Toolkit style): use better-sqlite3, pg, or mysql2 for SQL; ioredis for Redis; the mongodb driver for MongoDB.
+Checkpointers live in `@langgraph-toolkit/adapter-checkpointers` and take an injected driver, so the package carries zero database dependencies at build time (Redux Toolkit style): use better-sqlite3, pg, or mysql2 for SQL; ioredis for Redis; the mongodb driver for MongoDB.
 
 ```ts
-import { SqlCheckpointer, RedisCheckpointer, MongoCheckpointer, makeSyncSqlDriver } from "@langgraph/adapter-checkpointers";
+import { SqlCheckpointer, RedisCheckpointer, MongoCheckpointer, makeSyncSqlDriver } from "@langgraph-toolkit/adapter-checkpointers";
 import Database from "better-sqlite3";
 
 // SQLite (or Postgres/MySQL: pass the dialect)
@@ -131,7 +131,7 @@ import {
   rolePolicy, combinePolicies, planTierResolver,
   withTokenBudget, testEdgeRisk, e2eActor,
   PermissionDeniedError, TokenBudgetExceededError,
-} from "@langgraph/toolkit";
+} from "@langgraph-toolkit/core";
 
 const policy = rolePolicy({ "admin-chat": ["admin", "operator"] });
 const tiers = planTierResolver({
@@ -166,7 +166,7 @@ The core ships an end-to-end harness (`packages/core/src/e2e.ts`) so contributor
 Queue dispatch is a core capability, not a fifth host. Any queue (Strux Queue, BullMQ, SQS) plugs in via `QueueAdapter`:
 
 ```ts
-import { registerQueueAdapter, dispatchToQueue } from "@langgraph/toolkit";
+import { registerQueueAdapter, dispatchToQueue } from "@langgraph-toolkit/core";
 registerQueueAdapter("default", { enqueue: (job) => bullQueue.add("graph", job) });
 await dispatchToQueue(registry, "admin-chat", { messages: [...] });
 ```

@@ -2,13 +2,13 @@
  * examples/nest-app: the SAME database-chat resource on NestJS.
  *
  *   npm install @nestjs/common @nestjs/platform-express @nestjs/core rxjs
- *        @langgraph/toolkit @langgraph/adapter-nestjs
+ *        @langgraph-toolkit/core @langgraph-toolkit/adapter-nestjs
  *
  * Graph code untouched. Nest binds via DynamicModule + Injectable service,
  * controllers use Nest's own @Sse() decorator over the async iterable.
  */
-import { GraphRegistry, ToolkitModelRegistry } from "@langgraph/toolkit";
-import { GraphService, LangGraphModule } from "@langgraph/adapter-nestjs";
+import { GraphRegistry, ToolkitModelRegistry } from "@langgraph-toolkit/core";
+import { GraphService, LangGraphModule } from "@langgraph-toolkit/adapter-nestjs";
 import { databaseChatGraph } from "../shared/agent.js";
 
 const registry = new GraphRegistry();

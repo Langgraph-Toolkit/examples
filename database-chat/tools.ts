@@ -1,5 +1,5 @@
-import { schema, tool, type JsonObject, type JsonValue } from "@langgraph/toolkit";
-import type { McpGateway } from "@langgraph/toolkit-mcp";
+import { schema, tool, type JsonObject, type JsonValue } from "@langgraph-toolkit/core";
+import type { McpGateway } from "@langgraph-toolkit/mcp";
 import type { DatabaseChatGlobal, DatabaseQueryResult, DatabaseRow, DatabaseSchema } from "./types.js";
 
 export interface GetSchemaArgs {

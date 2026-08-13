@@ -1,4 +1,4 @@
-import { schema, type ChatMessage, type JsonValue } from "@langgraph/toolkit";
+import { schema, type ChatMessage, type JsonValue } from "@langgraph-toolkit/core";
 import type { ApprovalRequest, DatabaseAnswer, DatabaseChatInput, DatabaseClarificationRequest, DatabaseRow } from "./types.js";
 
 function objectValue(value: JsonValue, name: string): Record<string, JsonValue> {

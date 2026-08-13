@@ -1,4 +1,4 @@
-import type { Actor, ChatMessage, JsonObject } from "@langgraph/toolkit";
+import type { Actor, ChatMessage, JsonObject } from "@langgraph-toolkit/core";
 
 export type DatabaseIntent = "lookup" | "aggregate" | "compare" | "trend" | "drilldown" | "metadata" | "follow_up" | "explain" | "unsupported";
 

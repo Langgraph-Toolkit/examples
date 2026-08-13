@@ -1,14 +1,14 @@
 /**
  * examples/fastify-app: the SAME database-chat resource on Fastify.
  *
- *   npm install fastify @langgraph/toolkit @langgraph/adapter-fastify
+ *   npm install fastify @langgraph-toolkit/core @langgraph-toolkit/adapter-fastify
  *
  * Graph code untouched. Fastify gets a plugin, an app.langgraph decorator,
  * and native SSE over reply.raw (no extra SSE dependency).
  */
 import Fastify from "fastify";
-import { langgraphFastify, decorateLangGraph } from "@langgraph/adapter-fastify";
-import { GraphRegistry, ToolkitModelRegistry, MockProvider } from "@langgraph/toolkit";
+import { langgraphFastify, decorateLangGraph } from "@langgraph-toolkit/adapter-fastify";
+import { GraphRegistry, ToolkitModelRegistry, MockProvider } from "@langgraph-toolkit/core";
 import { databaseChatGraph } from "../shared/agent.js";
 
 const registry = new GraphRegistry();

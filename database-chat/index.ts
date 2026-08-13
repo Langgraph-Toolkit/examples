@@ -1,6 +1,6 @@
 import { createDatabaseChatGraph } from "./graph.js";
-import { attachExecutor } from "@langgraph/toolkit";
-import { compile } from "@langgraph/toolkit";
+import { attachExecutor } from "@langgraph-toolkit/core";
+import { compile } from "@langgraph-toolkit/core";
 import { demoDatabaseMcp } from "./mcp.js";
 
 export const databaseChatDefinition = createDatabaseChatGraph(demoDatabaseMcp);

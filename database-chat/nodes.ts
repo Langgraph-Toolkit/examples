@@ -1,6 +1,6 @@
-import type { JsonObject, NodeContext } from "@langgraph/toolkit";
+import type { JsonObject, NodeContext } from "@langgraph-toolkit/core";
 import { databaseIntent } from "./intent.js";
-import type { McpGateway } from "@langgraph/toolkit-mcp";
+import type { McpGateway } from "@langgraph-toolkit/mcp";
 import { createExecuteQueryTool, createGetSchemaTool } from "./tools.js";
 import type {
   DatabaseAuditRecord,

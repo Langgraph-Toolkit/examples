@@ -7,8 +7,8 @@
     "test": "tsx database-chat/test.ts"
   },
   "dependencies": {
-    "@langgraph/toolkit": "0.1.0",
-    "@langgraph/toolkit-mcp": "0.1.0"
+    "@langgraph-toolkit/core": "0.1.0",
+    "@langgraph-toolkit/mcp": "0.1.0"
   },
   "devDependencies": {
     "tsx": "^4.19.1",

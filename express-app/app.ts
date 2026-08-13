@@ -1,14 +1,14 @@
 /**
  * examples/express-app: the SAME database-chat resource on Express.
  *
- *   npm install express @langgraph/toolkit @langgraph/adapter-express
+ *   npm install express @langgraph-toolkit/core @langgraph-toolkit/adapter-express
  *
  * Graph code (examples/shared/agent.ts) untouched. Express only adds the
  * router: POST /agents/:name/run (JSON) + GET /agents/:name/stream (SSE).
  */
 import express from "express";
-import { langgraphRouter, sseMiddleware } from "@langgraph/adapter-express";
-import { GraphRegistry, ToolkitModelRegistry, MockProvider } from "@langgraph/toolkit";
+import { langgraphRouter, sseMiddleware } from "@langgraph-toolkit/adapter-express";
+import { GraphRegistry, ToolkitModelRegistry, MockProvider } from "@langgraph-toolkit/core";
 import { databaseChatGraph } from "../shared/agent.js";
 
 const registry = new GraphRegistry();

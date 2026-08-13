@@ -1,4 +1,4 @@
-import { intent } from "@langgraph/toolkit";
+import { intent } from "@langgraph-toolkit/core";
 import type { DatabaseChatInput, DatabaseIntent } from "./types.js";
 
 export const databaseIntent = intent<DatabaseChatInput, DatabaseIntent>("database-intent", (input) => {
