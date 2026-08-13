@@ -1,105 +1,42 @@
 import {
-  createToolkitRuntime,
-  ToolkitModelRegistry,
-  type Actor,
-  type LLMProviderConfig,
-  type ToolkitRuntime,
-} from "@langgraph-toolkit/core";
-import {
-  createCommunityModelRegistry,
-  type CommunityRegistryOptions,
+  createCommunityDatabaseMcpAgent,
+  type CommunityDatabaseMcpAgentOptions,
 } from "@langgraph-toolkit/community";
 import {
   createMemoryDatabaseMcpGateway,
-  createMcpApplication,
-  type McpApplication,
+  type DatabaseMcpAgent,
+  type McpDatabaseRow,
   type McpGateway,
   type McpServerDeclaration,
 } from "@langgraph-toolkit/mcp";
-import { resolveDatabaseChatConfig, type DatabaseChatConfig } from "./config.js";
-import { createDatabaseChatGraph } from "./graph.js";
+import { databaseMcp } from "./mcp.js";
 import { demoRows } from "./fixtures.js";
-import type { DatabaseRow } from "./types.js";
 
-/** Options for composing the complete database-chat resource. */
-export interface DatabaseChatResourceOptions {
-  readonly config?: DatabaseChatConfig;
-  /** Community provider overrides. Defaults infer DeepSeek, Hugging Face, or mock from the environment. */
-  readonly model?: Omit<CommunityRegistryOptions, "fallback">;
-  readonly actor?: Actor;
-  readonly rows?: readonly DatabaseRow[];
+/** Options that remain meaningful at the application boundary. Provider and runtime details are inferred. */
+export type DatabaseChatResourceOptions = Omit<CommunityDatabaseMcpAgentOptions, "mcp" | "rows" | "mcpServer" | "name"> & {
+  readonly rows?: readonly McpDatabaseRow[];
   readonly gateway?: McpGateway;
-  readonly mcp?: McpApplication;
   readonly mcpServer?: McpServerDeclaration;
-}
+};
 
-/** Fully composed graph, runtime, model registry and MCP lifecycle boundary. */
-export interface DatabaseChatResource {
-  readonly runtime: ToolkitRuntime;
-  readonly graph: ReturnType<typeof createDatabaseChatGraph>;
-  readonly gateway: McpGateway;
-  readonly modelRegistry: ToolkitModelRegistry;
-  readonly close: () => Promise<void>;
-}
-
-function databaseIntentFallback(): LLMProviderConfig {
-  return {
-    driver: "mock",
-    model: "database-chat-local",
-    mockResponse: JSON.stringify({
-      kind: "lookup",
-      entities: ["database records"],
-      metrics: [],
-      dimensions: [],
-      timeRange: null,
-      datasource: "database",
-      tableHint: "documents",
-      confidence: 0.5,
-      language: "en",
-      needsClarification: false,
-    }),
-  };
-}
+/** The complete database-chat resource is the package-owned MCP agent handle. */
+export type DatabaseChatResource = DatabaseMcpAgent;
 
 /**
- * Compose database-chat once for any host framework.
- *
- * The default is deterministic in-memory MCP. Pass `mcpServer` for a remote
- * declaration with async credentials, or pass an already-created `mcp`
- * application when the host owns several MCP servers.
+ * Compose database-chat for any host framework.
+ * The example owns only fixtures, the MCP gateway choice, and its business policy.
  */
 export async function createDatabaseChatResource(
   options: DatabaseChatResourceOptions = {},
 ): Promise<DatabaseChatResource> {
-  const config = resolveDatabaseChatConfig(options.config);
-  let gateway: McpGateway;
-  let close: () => Promise<void> = async () => undefined;
-
-  if (options.gateway) {
-    gateway = options.gateway;
-  } else if (options.mcp) {
-    gateway = await options.mcp.gateway(config.mcpServer);
-    close = options.mcp.close;
-  } else if (options.mcpServer) {
-    const application = createMcpApplication({ servers: [options.mcpServer] });
-    gateway = await application.gateway(options.mcpServer.name);
-    close = application.close;
-  } else {
-    gateway = createMemoryDatabaseMcpGateway(options.rows ?? demoRows, {
-      dialect: config.dialect,
-      serverName: config.mcpServer,
-    });
-    close = gateway.close;
-  }
-
-  const modelRegistry = createCommunityModelRegistry({
-    ...options.model,
-    fallback: databaseIntentFallback(),
+  const { rows, gateway, mcpServer, ...agentOptions } = options;
+  const localGateway = gateway ?? (mcpServer === undefined
+    ? (rows === undefined ? databaseMcp : createMemoryDatabaseMcpGateway(rows, { serverName: "database", dialect: options.dialect ?? "memory" }))
+    : undefined);
+  return createCommunityDatabaseMcpAgent({
+    ...agentOptions,
+    name: "database-chat",
+    ...(localGateway === undefined ? {} : { mcp: localGateway }),
+    ...(mcpServer === undefined ? {} : { mcpServer }),
   });
-  const graph = createDatabaseChatGraph(gateway, config);
-  const runtime = createToolkitRuntime({ modelRegistry, actor: options.actor }, (current) => {
-    current.register(graph);
-  });
-
-  return { runtime, graph, gateway, modelRegistry, close };
 }
