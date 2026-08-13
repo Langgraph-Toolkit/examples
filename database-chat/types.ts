@@ -9,6 +9,9 @@ export type DatabaseIntentDetails = JsonObject & {
   readonly dimensions: readonly string[];
   readonly timeRange: string | null;
   readonly datasource: string | null;
+  readonly tableHint: string | null;
+  readonly confidence: number;
+  readonly language: string;
   readonly needsClarification: boolean;
 };
 

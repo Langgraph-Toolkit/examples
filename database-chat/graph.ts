@@ -42,6 +42,9 @@ export function createDatabaseChatGraph(database: McpGateway, options: DatabaseC
         dimensions: [],
         timeRange: null,
         datasource: global.mcpServer,
+        tableHint: null,
+        confidence: 0,
+        language: "unknown",
         needsClarification: true,
       },
       permission: {
@@ -79,6 +82,9 @@ export function createDatabaseChatGraph(database: McpGateway, options: DatabaseC
         dimensions: [],
         timeRange: null,
         datasource: global.mcpServer,
+        tableHint: null,
+        confidence: 0,
+        language: "unknown",
         needsClarification: true,
       },
       permission: {
@@ -99,7 +105,7 @@ export function createDatabaseChatGraph(database: McpGateway, options: DatabaseC
     },
     schemas: { input: databaseChatInputSchema, output: databaseAnswerSchema, interrupt: databaseInterruptSchema },
     nodes: {
-      intake: node(nodes.intake, { label: "Classify intent", stepLabel: "Classify intent" }),
+      intake: node(nodes.intake, { tier: "cheap", label: "Classify intent", stepLabel: "Classify intent" }),
       discover: node(nodes.discover, { tier: "cheap", label: "Discover approved schema" }),
       plan: node(nodes.plan, { tier: "cheap", label: "Plan read-only query" }),
       validate: node(nodes.validate, { tier: "cheap", label: "Validate SQL policy" }),

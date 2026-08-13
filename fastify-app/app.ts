@@ -1,37 +1,37 @@
 /**
  * examples/fastify-app: the SAME database-chat resource on Fastify.
  *
- *   npm install fastify @langgraph-toolkit/core @langgraph-toolkit/adapter-fastify
- *
- * Graph code untouched. Fastify gets a plugin, an app.langgraph decorator,
- * and native SSE over reply.raw (no extra SSE dependency).
+ * The domain resource owns graph, MCP and model composition. Fastify only
+ * mounts the transport adapter and keeps its native lifecycle.
  */
 import Fastify from "fastify";
 import { langgraphFastify, decorateLangGraph } from "@langgraph-toolkit/adapter-fastify";
-import { GraphRegistry, ToolkitModelRegistry, MockProvider } from "@langgraph-toolkit/core";
-import { databaseChatGraph } from "../shared/agent.js";
+import { createDatabaseChatResource } from "../shared/agent.js";
+import { isMainModule, readHostConfig, type HostConfig } from "../shared/host.js";
 
-const registry = new GraphRegistry();
-registry.add(databaseChatGraph);
-const provider = new ToolkitModelRegistry({
-  tiers: {
-    strong: { driver: "mock", model: "test-strong" },
-    cheap: { driver: "mock", model: "test-cheap" },
-    // strong: { driver: "huggingface", model: "mistralai/Mistral-7B-Instruct-v0.3", apiKey: process.env.HF_TOKEN, provider: "auto" },
-  },
-});
+export async function createFastifyApp(): Promise<{
+  readonly fastify: ReturnType<typeof Fastify>;
+  readonly resource: Awaited<ReturnType<typeof createDatabaseChatResource>>;
+  readonly config: HostConfig;
+}> {
+  const resource = await createDatabaseChatResource();
+  const fastify = Fastify({ logger: true });
+  decorateLangGraph(fastify, resource.runtime);
+  await fastify.register(langgraphFastify, { runtime: resource.runtime });
+  fastify.addHook("onClose", async () => resource.close());
+  return { fastify, resource, config: readHostConfig(3002) };
+}
 
-const fastify = Fastify();
-decorateLangGraph(fastify, registry);
-await fastify.register(langgraphFastify, { graphs: registry });
+export async function startFastifyApp(): Promise<{
+  readonly fastify: ReturnType<typeof Fastify>;
+  readonly resource: Awaited<ReturnType<typeof createDatabaseChatResource>>;
+}> {
+  const { fastify, resource, config } = await createFastifyApp();
+  await fastify.listen(config);
+  console.log(`Fastify database-chat listening on http://${config.host}:${config.port}`);
+  return { fastify, resource };
+}
 
-const port = Number(process.env.PORT ?? 3002);
-await fastify.listen({ port, host: "127.0.0.1" });
-console.log(`fastify app listening on :${port}`);
-await fastify.close();
-
-// Demo run proving host parity with the StruxJS / Express examples
-const result = await fastify.langgraph.run("database-chat", { question: "What is the order status?" });
-console.log("stoppedReason:", (result as { stoppedReason: string }).stoppedReason);
-
-export { fastify, registry, provider };
+if (isMainModule(import.meta.url)) {
+  await startFastifyApp();
+}

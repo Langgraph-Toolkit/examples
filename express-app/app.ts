@@ -1,45 +1,42 @@
 /**
- * examples/express-app: the SAME database-chat resource on Express.
+ * examples/express-app: the same database-chat resource on Express.
  *
  *   npm install express @langgraph-toolkit/core @langgraph-toolkit/adapter-express
  *
  * Graph code (examples/shared/agent.ts) untouched. Express only adds the
  * router: POST /agents/:name/run (JSON) + GET /agents/:name/stream (SSE).
  */
-import express from "express";
+import express, { type Express } from "express";
 import { langgraphRouter, sseMiddleware } from "@langgraph-toolkit/adapter-express";
-import { GraphRegistry, ToolkitModelRegistry, MockProvider } from "@langgraph-toolkit/core";
-import { databaseChatGraph } from "../shared/agent.js";
+import { createDatabaseChatResource } from "../shared/agent.js";
+import { isMainModule, readHostConfig, type HostConfig } from "../shared/host.js";
 
-const registry = new GraphRegistry();
-registry.add(databaseChatGraph);
-
-// Optional: configure HF open-source tiers instead of mock, without touching
-// the graph code (Rule T3: only config changes).
-const provider = new ToolkitModelRegistry({
-  tiers: {
-    strong: { driver: "mock", model: "test-strong" },
-    cheap: { driver: "mock", model: "test-cheap" },
-    // strong: { driver: "huggingface", model: "mistralai/Mistral-7B-Instruct-v0.3", apiKey: process.env.HF_TOKEN, provider: "auto" },
-  },
-});
-
-const app = express();
-app.use(express.json());
-app.use(sseMiddleware);
-app.use(langgraphRouter({ graphs: registry, path: "/agents/:name" }));
-
-const port = Number(process.env.PORT ?? 3001);
-const server = app.listen(port, "127.0.0.1", () => console.log(`express app listening on :${port}`));
-if (process.argv[1]?.endsWith("express-app/app.ts") || process.argv[1]?.endsWith("express-app/app.js")) {
-  server.close();
+export async function createExpressApp(): Promise<{
+  readonly app: Express;
+  readonly resource: Awaited<ReturnType<typeof createDatabaseChatResource>>;
+  readonly config: HostConfig;
+}> {
+  const resource = await createDatabaseChatResource();
+  const app = express();
+  app.use(express.json());
+  app.use(sseMiddleware);
+  app.use(langgraphRouter({ runtime: resource.runtime, path: "/agents/:name" }));
+  return { app, resource, config: readHostConfig(3001) };
 }
 
-// Demo run (import-time, same as the StruxJS example, proving host parity)
-const result = await registry.run("database-chat", { question: "What is the refund policy?" }, {
-  threadId: "thread-1",
-  modelRegistry: provider,
-});
-console.log("stoppedReason:", result.stoppedReason);
+export async function startExpressApp(): Promise<{
+  readonly app: Express;
+  readonly resource: Awaited<ReturnType<typeof createDatabaseChatResource>>;
+  readonly server: ReturnType<Express["listen"]>;
+}> {
+  const { app, resource, config } = await createExpressApp();
+  const server = app.listen(config.port, config.host, () => {
+    console.log(`Express database-chat listening on http://${config.host}:${config.port}`);
+  });
+  server.once("close", () => void resource.close());
+  return { app, resource, server };
+}
 
-export { app, registry, provider };
+if (isMainModule(import.meta.url)) {
+  await startExpressApp();
+}

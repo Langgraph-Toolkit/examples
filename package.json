@@ -4,13 +4,32 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "tsx database-chat/test.ts"
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "tsx database-chat/test.ts",
+    "start:express": "tsx express-app/app.ts",
+    "start:fastify": "tsx fastify-app/app.ts",
+    "start:nest": "tsx nest-app/main.ts",
+    "start:strux": "tsx strux-app/app.ts"
   },
   "dependencies": {
+    "@langgraph-toolkit/adapter-express": "0.1.0",
+    "@langgraph-toolkit/adapter-fastify": "0.1.0",
+    "@langgraph-toolkit/adapter-nestjs": "0.1.0",
+    "@langgraph-toolkit/adapter-struxjs": "0.1.0",
     "@langgraph-toolkit/core": "0.1.0",
-    "@langgraph-toolkit/mcp": "0.1.0"
+    "@langgraph-toolkit/mcp": "0.1.0",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "express": "^5.1.0",
+    "fastify": "^5.4.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.0",
     "tsx": "^4.19.1",
     "typescript": "^5.4.5"
   }

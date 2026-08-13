@@ -6,5 +6,12 @@ import { demoDatabaseMcp } from "./mcp.js";
 export const databaseChatDefinition = createDatabaseChatGraph(demoDatabaseMcp);
 export const databaseChatGraph = attachExecutor(compile(databaseChatDefinition));
 export { createDatabaseChatGraph } from "./graph.js";
+export {
+  createDatabaseChatModelRegistry,
+  createDatabaseChatResource,
+  type DatabaseChatModelOptions,
+  type DatabaseChatResource,
+  type DatabaseChatResourceOptions,
+} from "./resource.js";
 export { createMemoryDatabaseMcpGateway, demoDatabaseMcp, demoRows } from "./mcp.js";
 export type * from "./types.js";

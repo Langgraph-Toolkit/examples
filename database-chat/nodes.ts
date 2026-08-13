@@ -9,7 +9,6 @@ import type {
   DatabaseChatInput,
   DatabaseChatState,
   DatabaseChatVariables,
-  DatabaseIntentDetails,
   DatabasePermissionContext,
   DatabaseQueryError,
   DatabaseQueryPlan,
@@ -36,22 +35,6 @@ function permissionFor(state: DatabaseChatState, ctx: Context): DatabasePermissi
     allowedTables: ctx.global.allowedTables,
     allowedColumns: ctx.global.allowedColumns,
     sensitiveColumns: ctx.global.sensitiveColumns,
-  };
-}
-
-function detailsFor(kind: DatabaseIntent, question: string, conversationLength: number, datasource: string): DatabaseIntentDetails {
-  const lower = question.toLowerCase();
-  const entities = ["refund", "order", "customer", "document", "status", "policy"].filter((item) => lower.includes(item));
-  const metrics = ["count", "sum", "average", "avg", "total"].filter((item) => lower.includes(item));
-  const dimensions = ["table", "customer", "order", "status", "month", "quarter", "year"].filter((item) => lower.includes(item));
-  return {
-    kind,
-    entities,
-    metrics,
-    dimensions,
-    timeRange: /(today|yesterday|week|month|quarter|year)/.test(lower) ? lower.match(/(today|yesterday|week|month|quarter|year)/)?.[0] ?? null : null,
-    datasource,
-    needsClarification: kind === "unsupported" || (kind === "follow_up" && conversationLength === 0),
   };
 }
 
@@ -116,12 +99,12 @@ export function createDatabaseChatNodes(gateway: McpGateway, global: Global) {
 
   async function intake(state: DatabaseChatState, ctx: Context): Promise<Partial<DatabaseChatState>> {
     ctx.think({ phase: "intent", detail: "Classifying intent and preserving conversation context" }, "Classify intent");
-    const detected = await ctx.detectIntent(databaseIntent, { question: state.question, conversation: state.conversation });
+    const classification = await ctx.analyzeIntent(databaseIntent, { question: state.question, conversation: state.conversation });
     const permission = permissionFor(state, ctx);
     return {
       actorId: permission.actorId,
-      intent: detected,
-      intentDetails: detailsFor(detected, state.question, state.conversation.length, ctx.global.mcpServer),
+      intent: classification.value,
+      intentDetails: classification.details,
       permission,
       status: "received",
     };
