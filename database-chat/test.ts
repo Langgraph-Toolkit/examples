@@ -1,18 +1,20 @@
 import { GraphRegistry, MemoryCheckpointer, e2eActor, expectDone, expectInterrupted, type StepEvent } from "@langgraph-toolkit/core";
+import { createCommunityModelRegistry } from "@langgraph-toolkit/community";
 import { databaseChatGraph } from "./index.js";
-import { createDatabaseChatModelRegistry } from "./resource.js";
 
 const registry = new GraphRegistry();
 registry.add(databaseChatGraph);
 const actor = e2eActor("database-user", ["reader"]);
 const checkpoint = new MemoryCheckpointer();
-const modelRegistry = createDatabaseChatModelRegistry({
-  cheap: {
-    driver: "mock",
-    model: "database-chat-e2e",
-    mockResponse: JSON.stringify({ kind: "lookup", entities: ["refund policy"], metrics: [], dimensions: [], timeRange: null, datasource: "database", tableHint: "documents", confidence: 0.99, language: "en", needsClarification: false }),
+const modelRegistry = createCommunityModelRegistry({
+  tiers: {
+    cheap: {
+      driver: "mock",
+      model: "database-chat-e2e",
+      mockResponse: JSON.stringify({ kind: "lookup", entities: ["refund policy"], metrics: [], dimensions: [], timeRange: null, datasource: "database", tableHint: "documents", confidence: 0.99, language: "en", needsClarification: false }),
+    },
+    strong: { driver: "mock", model: "database-chat-e2e", mockResponse: "deterministic answer model" },
   },
-  strong: { driver: "mock", model: "database-chat-e2e", mockResponse: "deterministic answer model" },
 });
 const threadId = "database-chat-example";
 const first = await databaseChatGraph.run({ question: "What is the refund policy?" }, { actor, threadId, checkpoint, modelRegistry });

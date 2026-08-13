@@ -6,6 +6,11 @@ import {
   type ToolkitRuntime,
 } from "@langgraph-toolkit/core";
 import {
+  createCommunityModelRegistry,
+  type CommunityRegistryOptions,
+} from "@langgraph-toolkit/community";
+import {
+  createMemoryDatabaseMcpGateway,
   createMcpApplication,
   type McpApplication,
   type McpGateway,
@@ -13,19 +18,14 @@ import {
 } from "@langgraph-toolkit/mcp";
 import { resolveDatabaseChatConfig, type DatabaseChatConfig } from "./config.js";
 import { createDatabaseChatGraph } from "./graph.js";
-import { createMemoryDatabaseMcpGateway, demoRows } from "./mcp.js";
+import { demoRows } from "./fixtures.js";
 import type { DatabaseRow } from "./types.js";
-
-/** Per-tier provider overrides for one database-chat resource. */
-export interface DatabaseChatModelOptions {
-  readonly cheap?: LLMProviderConfig;
-  readonly strong?: LLMProviderConfig;
-}
 
 /** Options for composing the complete database-chat resource. */
 export interface DatabaseChatResourceOptions {
   readonly config?: DatabaseChatConfig;
-  readonly model?: DatabaseChatModelOptions;
+  /** Community provider overrides. Defaults infer DeepSeek, Hugging Face, or mock from the environment. */
+  readonly model?: Omit<CommunityRegistryOptions, "fallback">;
   readonly actor?: Actor;
   readonly rows?: readonly DatabaseRow[];
   readonly gateway?: McpGateway;
@@ -42,26 +42,10 @@ export interface DatabaseChatResource {
   readonly close: () => Promise<void>;
 }
 
-function defaultProviderConfig(): LLMProviderConfig {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (apiKey) {
-    return {
-      driver: "openai-compatible",
-      model: process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash",
-      apiKey,
-      baseURL: process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com/v1",
-      maxTokens: Number(process.env.DEEPSEEK_MAX_TOKENS ?? 512),
-      temperature: Number(process.env.DEEPSEEK_TEMPERATURE ?? 0.1),
-      reasoningEffort: process.env.DEEPSEEK_REASONING_EFFORT === "none" || process.env.DEEPSEEK_REASONING_EFFORT === "low" || process.env.DEEPSEEK_REASONING_EFFORT === "medium" || process.env.DEEPSEEK_REASONING_EFFORT === "high"
-        ? process.env.DEEPSEEK_REASONING_EFFORT
-        : undefined,
-    };
-  }
+function databaseIntentFallback(): LLMProviderConfig {
   return {
     driver: "mock",
     model: "database-chat-local",
-    // Local fallback keeps the example runnable without a network credential.
-    // Production deployments should set DEEPSEEK_API_KEY or pass a provider explicitly.
     mockResponse: JSON.stringify({
       kind: "lookup",
       entities: ["database records"],
@@ -75,17 +59,6 @@ function defaultProviderConfig(): LLMProviderConfig {
       needsClarification: false,
     }),
   };
-}
-
-/** Create the default two-tier model registry used by the example. */
-export function createDatabaseChatModelRegistry(options: DatabaseChatModelOptions = {}): ToolkitModelRegistry {
-  const fallback = defaultProviderConfig();
-  return new ToolkitModelRegistry({
-    tiers: {
-      cheap: options.cheap ?? fallback,
-      strong: options.strong ?? fallback,
-    },
-  });
 }
 
 /**
@@ -119,7 +92,10 @@ export async function createDatabaseChatResource(
     close = gateway.close;
   }
 
-  const modelRegistry = createDatabaseChatModelRegistry(options.model);
+  const modelRegistry = createCommunityModelRegistry({
+    ...options.model,
+    fallback: databaseIntentFallback(),
+  });
   const graph = createDatabaseChatGraph(gateway, config);
   const runtime = createToolkitRuntime({ modelRegistry, actor: options.actor }, (current) => {
     current.register(graph);

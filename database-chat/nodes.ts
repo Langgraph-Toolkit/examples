@@ -1,7 +1,6 @@
 import type { JsonObject, NodeContext } from "@langgraph-toolkit/core";
 import { databaseIntent } from "./intent.js";
-import type { McpGateway } from "@langgraph-toolkit/mcp";
-import { createExecuteQueryTool, createGetSchemaTool } from "./tools.js";
+import { createDatabaseMcpTools, type McpGateway } from "@langgraph-toolkit/mcp";
 import type {
   DatabaseAuditRecord,
   DatabaseChatContracts,
@@ -94,8 +93,12 @@ function auditFor(state: DatabaseChatState, result: DatabaseQueryResult | undefi
 }
 
 export function createDatabaseChatNodes(gateway: McpGateway, global: Global) {
-  const schemaTool = createGetSchemaTool(gateway, global);
-  const executeQueryTool = createExecuteQueryTool(gateway, global);
+  const { schemaTool, executeQueryTool } = createDatabaseMcpTools(gateway, {
+    server: global.mcpServer,
+    dialect: global.dialect,
+    allowedTables: global.allowedTables,
+    maxRows: global.maxRows,
+  });
 
   async function intake(state: DatabaseChatState, ctx: Context): Promise<Partial<DatabaseChatState>> {
     ctx.think({ phase: "intent", detail: "Classifying intent and preserving conversation context" }, "Classify intent");

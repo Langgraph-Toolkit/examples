@@ -1,4 +1,5 @@
 import type { Actor, ChatMessage, JsonObject } from "@langgraph-toolkit/core";
+import type { McpDatabaseQueryResult, McpDatabaseRow, McpDatabaseSchema } from "@langgraph-toolkit/mcp";
 
 export type DatabaseIntent = "lookup" | "aggregate" | "compare" | "trend" | "drilldown" | "metadata" | "follow_up" | "explain" | "unsupported";
 
@@ -20,13 +21,7 @@ export interface DatabaseChatInput {
   readonly conversation?: readonly ChatMessage[];
 }
 
-export type DatabaseRow = JsonObject & {
-  readonly id: string;
-  readonly table: string;
-  readonly title: string;
-  readonly body: string;
-  readonly metadata: JsonObject;
-};
+export type DatabaseRow = McpDatabaseRow;
 
 export type DatabaseAnswer = JsonObject & {
   readonly text: string;
@@ -36,21 +31,7 @@ export type DatabaseAnswer = JsonObject & {
   readonly rowCount: number;
 };
 
-export type DatabaseSchemaColumn = JsonObject & {
-  readonly name: string;
-  readonly type: string;
-  readonly nullable: boolean;
-};
-
-export type DatabaseSchemaTable = JsonObject & {
-  readonly name: string;
-  readonly columns: readonly DatabaseSchemaColumn[];
-};
-
-export type DatabaseSchema = JsonObject & {
-  readonly dialect: "memory" | "postgres" | "mysql" | "sqlite" | "mongodb";
-  readonly tables: readonly DatabaseSchemaTable[];
-};
+export type DatabaseSchema = McpDatabaseSchema;
 
 export type DatabaseQueryPlan = JsonObject & {
   readonly queryId: string;
@@ -86,16 +67,7 @@ export type SqlValidation = JsonObject & {
   readonly tenantPredicatePresent: boolean;
 };
 
-export type DatabaseQueryResult = JsonObject & {
-  readonly queryId: string;
-  readonly datasource: string;
-  readonly rows: readonly DatabaseRow[];
-  readonly columns: readonly string[];
-  readonly rowCount: number;
-  readonly truncated: boolean;
-  readonly durationMs: number;
-  readonly warnings: readonly string[];
-};
+export type DatabaseQueryResult = McpDatabaseQueryResult;
 
 export type DatabaseQueryError = JsonObject & {
   readonly queryId: string;

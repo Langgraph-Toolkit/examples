@@ -8,9 +8,7 @@ export {
 } from "../database-chat/index.js";
 
 export {
-  createDatabaseChatModelRegistry,
   createDatabaseChatResource,
-  type DatabaseChatModelOptions,
   type DatabaseChatResource,
   type DatabaseChatResourceOptions,
 } from "../database-chat/index.js";

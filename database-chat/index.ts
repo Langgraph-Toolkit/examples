@@ -1,17 +1,18 @@
 import { createDatabaseChatGraph } from "./graph.js";
 import { attachExecutor } from "@langgraph-toolkit/core";
 import { compile } from "@langgraph-toolkit/core";
-import { demoDatabaseMcp } from "./mcp.js";
+import { createMemoryDatabaseMcpGateway } from "@langgraph-toolkit/mcp";
+import { demoRows } from "./fixtures.js";
 
+export const demoDatabaseMcp = createMemoryDatabaseMcpGateway(demoRows);
 export const databaseChatDefinition = createDatabaseChatGraph(demoDatabaseMcp);
 export const databaseChatGraph = attachExecutor(compile(databaseChatDefinition));
 export { createDatabaseChatGraph } from "./graph.js";
 export {
-  createDatabaseChatModelRegistry,
   createDatabaseChatResource,
-  type DatabaseChatModelOptions,
   type DatabaseChatResource,
   type DatabaseChatResourceOptions,
 } from "./resource.js";
-export { createMemoryDatabaseMcpGateway, demoDatabaseMcp, demoRows } from "./mcp.js";
+export { demoRows } from "./fixtures.js";
+export { createMemoryDatabaseMcpGateway } from "@langgraph-toolkit/mcp";
 export type * from "./types.js";
