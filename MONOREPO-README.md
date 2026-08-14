@@ -52,18 +52,30 @@ The local fixtures are deterministic, so unit and e2e tests do not need a live d
 The database-chat resource is the reusable application boundary:
 
 ```ts
-import { createCommunityDatabaseMcpAgent } from "@langgraph-toolkit/community";
-import { databaseChatGateway } from "./mcp.js";
+import { createDatabaseAgent } from "@langgraph-toolkit/community/database";
+import { createMCP, useStreamableHttp } from "@langgraph-toolkit/mcp";
 
 export async function createDatabaseChatResource() {
-  return createCommunityDatabaseMcpAgent({
-    mcp: databaseChatGateway,
+  const mcp = createMCP({
+    servers: {
+      database: useStreamableHttp(process.env.DATABASE_MCP_URL ?? "http://localhost:8811/mcp"),
+    },
+  });
+  const resource = createDatabaseAgent({
+    mcp: await mcp.server("database"),
     name: "database-chat",
   });
+  return {
+    ...resource,
+    close: async () => {
+      await resource.close();
+      await mcp.close();
+    },
+  };
 }
 ```
 
-The community preset infers a DeepSeek, Hugging Face, OpenAI-compatible, or deterministic mock provider from explicit options and environment variables. The MCP package owns typed database tools and context formatting. A host adapter does not recreate nodes, intent parsing, MCP clients, or provider policy.
+The Community preset infers a DeepSeek, Hugging Face, OpenAI-compatible, or deterministic mock provider from explicit options and environment variables. Community owns this database convenience composition; MCP owns only the generic gateway, typed tool, and context boundaries. A host adapter does not recreate nodes, intent parsing, MCP clients, or provider policy.
 
 ## Host adapters
 
@@ -72,7 +84,7 @@ The community preset infers a DeepSeek, Hugging Face, OpenAI-compatible, or dete
 ```ts
 LangGraphModule.forRootAsync({
   global: true,
-  useFactory: createDatabaseChatResource,
+  useFactory: createDbResource,
 });
 ```
 
@@ -84,7 +96,7 @@ Create the resource once, pass its runtime to the thin adapter, and mount the ad
 
 ### StruxJS
 
-Export a ready resource from `app/Agents/<workflow>` and let `scanAndRegisterAgents()` discover it during application boot. StruxJS owns provider registration and lifecycle; Core and MCP continue to own graph execution and context.
+Export a ready resource from `app/Agents/<workflow>` and let `registerAgents()` discover it during application boot. StruxJS owns provider registration and lifecycle; Core and MCP continue to own graph execution and context.
 
 ## Persistence and resume
 
@@ -107,7 +119,7 @@ Each package remains independently publishable:
 | Package | Owns |
 |---|---|
 | `@langgraph-toolkit/core` | Typed state, graph definition, execution, streaming, cancellation, gates, interrupts, and runtime contracts |
-| `@langgraph-toolkit/mcp` | MCP transport declarations, typed tools, context formatting, database presets, and lifecycle contracts |
+| `@langgraph-toolkit/mcp` | Generic MCP transport declarations, multi-server connector, typed tools, context formatting, and lifecycle contracts |
 | `@langgraph-toolkit/community` | Provider inference, model tiers, fallback behavior, and contributor-owned use cases |
 | `@langgraph-toolkit/adapter-*` | Framework lifecycle, route binding, serialization, or persistence drivers only |
 

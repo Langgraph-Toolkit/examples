@@ -1,4 +1,3 @@
-import { Body, Controller, Get, Param, Post, Res } from "@nestjs/common";
 import {
   BoundGraphService,
   GraphHttpExceptionFilter,
@@ -11,7 +10,8 @@ import type {
   DatabaseMcpContracts,
   DatabaseMcpInput,
   DatabaseMcpState,
-} from "@langgraph-toolkit/mcp";
+} from "@langgraph-toolkit/community/database";
+import type { StepEvent } from "@langgraph-toolkit/core";
 import type { Observable } from "rxjs";
 
 @Controller("agents")
@@ -49,7 +49,7 @@ export class AppController {
   stream(
     @Query("question") question: string,
     @Headers("x-thread-id") threadId?: string,
-  ): Observable<GraphSseMessage> {
+  ): Observable<GraphSseMessage<StepEvent<DatabaseMcpState, DatabaseMcpContracts>>> {
     return this.chat.streamSse(
       { question },
       threadId === undefined ? undefined : { threadId },

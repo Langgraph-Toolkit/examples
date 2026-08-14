@@ -11,10 +11,10 @@
     "start": "node dist/bootstrap.js"
   },
   "dependencies": {
-    "@langgraph-toolkit/adapter-struxjs": "0.1.2",
-    "@langgraph-toolkit/community": "0.1.2",
-    "@langgraph-toolkit/core": "0.1.2",
-    "@langgraph-toolkit/mcp": "0.1.2",
+    "@langgraph-toolkit/adapter-struxjs": "0.2.0",
+    "@langgraph-toolkit/community": "0.2.0",
+    "@langgraph-toolkit/core": "0.2.0",
+    "@langgraph-toolkit/mcp": "0.2.0",
     "dotenv": "^16.4.7",
     "struxjs-core": "^1.0.6"
   },

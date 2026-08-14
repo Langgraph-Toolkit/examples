@@ -1,10 +1,9 @@
-import 'dotenv/config';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule.withAsyncChat());
+  const app = await NestFactory.create(AppModule.withChat());
   await app.listen(Number(process.env.PORT ?? '3000'));
 }
 

@@ -1,9 +1,9 @@
 import "dotenv/config";
 import Fastify from "fastify";
 import { langgraphFastify } from "@langgraph-toolkit/adapter-fastify";
-import { createDatabaseChatResource } from "./database-chat/resource.js";
+import { createDbResource } from "./database-chat/resource.js";
 
-const resource = await createDatabaseChatResource();
+const resource = await createDbResource();
 const app = Fastify({ logger: true });
 await app.register(langgraphFastify, {
   runtime: resource.runtime,

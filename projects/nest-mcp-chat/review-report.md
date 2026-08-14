@@ -1,12 +1,12 @@
 # Nest MCP chat release review
 
-This document records the release verification for the zero-config NestJS example. The example uses a typed graph resource, a typed MCP tool boundary, LLM-based intent analysis, and the asynchronous Nest lifecycle contract from Langgraph-Toolkit 0.1.2.
+This document records the local release-candidate verification for the zero-config NestJS example. The example uses a typed graph resource, a typed MCP tool boundary, LLM-based intent analysis, and the asynchronous Nest lifecycle contract from Langgraph-Toolkit 0.1.3.
 
 ## Resolved quality gates
 
 | Area | Verification |
 |---|---|
-| Package alignment | All direct toolkit dependencies use `0.1.2`; the temporary Core override and generated lockfile were removed. |
+| Package alignment | All direct toolkit dependencies use local release candidate `0.1.3`; the temporary Core override and generated lockfile were removed. |
 | Type safety | The example compiles with NodeNext TypeScript settings and uses explicit input, output, state, contract, MCP, and HTTP event types. |
 | Lint | ESLint passes for application source and e2e tests, including async fake MCP methods and typed Supertest response assertions. |
 | Runtime lifecycle | `LangGraphModule.forRootAsync()` owns resource creation and cleanup; application bootstrap does not manually construct or close the runtime. |

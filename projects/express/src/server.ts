@@ -1,9 +1,9 @@
 import "dotenv/config";
 import express from "express";
 import { langgraphRouter, sseMiddleware } from "@langgraph-toolkit/adapter-express";
-import { createDatabaseChatResource } from "./database-chat/resource.js";
+import { createDbResource } from "./database-chat/resource.js";
 
-const resource = await createDatabaseChatResource();
+const resource = await createDbResource();
 const app = express();
 app.use(express.json());
 app.use(sseMiddleware);

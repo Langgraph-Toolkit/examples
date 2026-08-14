@@ -1,4 +1,4 @@
-import type { McpDatabaseRow } from "@langgraph-toolkit/mcp";
+import type { McpDatabaseRow } from "@langgraph-toolkit/community/database";
 
 export const databaseChatRows: readonly McpDatabaseRow[] = [
   { id: "user-1", table: "users", name: "Ada", tier: "pro" },

@@ -1,6 +1,6 @@
-import { createMemoryDatabaseMcpGateway } from "@langgraph-toolkit/mcp";
+import { createMemoryGateway } from "@langgraph-toolkit/community/database";
 import { databaseChatRows } from "./fixtures.js";
 
-export const databaseChatMcp = createMemoryDatabaseMcpGateway(databaseChatRows, {
+export const databaseChatMcp = createMemoryGateway(databaseChatRows, {
   serverName: "fastify-database-chat",
 });

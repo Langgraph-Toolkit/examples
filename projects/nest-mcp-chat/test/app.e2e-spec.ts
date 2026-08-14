@@ -1,106 +1,76 @@
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { createCommunityModelRegistry } from '@langgraph-toolkit/community';
-import { createToolkitRuntime } from '@langgraph-toolkit/core';
-import type { JsonValue } from '@langgraph-toolkit/core';
-import { createMcpTool } from '@langgraph-toolkit/mcp';
+import { createDatabaseAgent, createMemoryGateway } from '@langgraph-toolkit/community/database';
 import type {
-  McpGateway,
-  McpToolDescriptor,
-  McpToolResult,
-} from '@langgraph-toolkit/mcp';
+  DatabaseMcpAnswer,
+  DatabaseMcpInput,
+  DatabaseMcpState,
+  McpDatabaseRow,
+} from '@langgraph-toolkit/community/database';
+import type { RunResult } from '@langgraph-toolkit/core';
 import { AppModule } from '../src/app.module.js';
-import {
-  createChatGraph,
-  type ContextSearchArgs,
-} from '../src/chat/chat.graph.js';
 
-interface ChatRunResponse {
-  readonly state: {
-    readonly context: string;
-    readonly answer: string;
-  };
-  readonly stoppedReason: string;
-}
+type ChatRunResponse = RunResult<DatabaseMcpState, DatabaseMcpAnswer>;
 
-function createFakeGateway(): McpGateway {
-  const result: McpToolResult = {
-    isError: false,
-    content: 'context',
-    structuredContent: { total: 1, courses: [{ title: 'Testing cơ bản' }] },
-  };
-  return {
-    server: 'test',
-    connect: () =>
-      Promise.resolve({
-        lifecycle: 'modern',
-        capabilities: {},
-      }),
-    listTools: () =>
-      Promise.resolve([
-        {
-          name: 'search_courses',
-          description: 'Search courses',
-          inputSchema: {},
-        },
-      ]),
-    callTool: () => Promise.resolve(result),
-    listResources: () => Promise.resolve([]),
-    readResource: () => Promise.resolve<JsonValue>(null),
-    close: () => Promise.resolve(),
-  };
+function createRows(): readonly McpDatabaseRow[] {
+  return [
+    {
+      id: 'course-1',
+      table: 'courses',
+      title: 'Testing cơ bản',
+      price: 0,
+      lessons: 31,
+    },
+  ];
 }
 
 describe('Chat API (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
-    const modelRegistry = createCommunityModelRegistry({});
-    const runtime = createToolkitRuntime({ modelRegistry });
-    const gateway = createFakeGateway();
-    const descriptor: McpToolDescriptor = {
-      name: 'search_courses',
-      description: 'Search courses',
-      inputSchema: {},
-    };
-    const contextTool = createMcpTool<ContextSearchArgs, JsonValue>({
-      gateway,
-      descriptor,
-      output: (result) => result.structuredContent ?? result.content,
+    const agent = await createDatabaseAgent({
+      name: 'chat',
+      mcp: createMemoryGateway(createRows(), {
+        serverName: 'test-database',
+      }),
+      policy: { approvalRequired: false },
     });
-    runtime.add(createChatGraph({ contextTool, modelRegistry }));
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule.withChat(runtime)],
+      imports: [AppModule.withChat(() => Promise.resolve(agent))],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
   });
 
-  it('POST /chat/run returns typed graph state', () => {
+  it('POST /chat/run returns the grounded MCP answer', () => {
     return request(app.getHttpServer() as Parameters<typeof request>[0])
       .post('/chat/run')
-      .send({ message: 'Có khóa học testing không?', threadId: 'e2e-1' })
+      .send({
+        question: 'Có khóa học nào không?',
+        threadId: 'e2e-1',
+      } satisfies DatabaseMcpInput & { threadId: string })
       .expect(200)
       .expect((response) => {
         const body = response.body as ChatRunResponse;
-        expect(body.state.context).toContain('Testing cơ bản');
-        expect(body.state.answer).toBe('mock:community-local:1');
-        expect(body.stoppedReason).toBe('done');
+        expect(body.state.status).toBe('completed');
+        expect(body.state.answer?.text).toContain('Testing cơ bản');
+        expect(body.state.answer?.grounded).toBe(true);
       });
   });
 
-  it('GET /chat/stream emits SSE events', () => {
+  it('GET /chat/stream emits typed graph events', () => {
     return request(app.getHttpServer() as Parameters<typeof request>[0])
-      .get('/chat/stream?message=hello&threadId=e2e-stream')
+      .get('/chat/stream?question=hello&threadId=e2e-stream')
       .expect('Content-Type', /text\/event-stream/)
       .expect(200)
       .expect((response) => {
         expect(response.text).toContain('event: node_start');
         expect(response.text).toContain('event: thinking');
-        expect(response.text).toContain('event: token');
-        expect(response.text).toContain('event: answer');
+        expect(response.text).toContain('event: intent');
+        expect(response.text).toContain('event: tool_start');
+        expect(response.text).toContain('"answer":{"text"');
       });
   });
 

@@ -4,12 +4,12 @@ import "dotenv/config";
 import { Application, HttpServiceProvider, WebSocketServiceProvider, Router, Route } from "struxjs-core";
 import type { Request, Response } from "struxjs-core";
 import type { JsonObject } from "@langgraph-toolkit/core";
-import { scanAndRegisterAgents, streamGraphToReply } from "@langgraph-toolkit/adapter-struxjs";
+import { registerAgents, streamReply } from "@langgraph-toolkit/adapter-struxjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = new Application(__dirname);
-const { runtime, results } = await scanAndRegisterAgents(path.join(__dirname, "app", "Agents"));
+const { runtime, results } = await registerAgents(path.join(__dirname, "app", "Agents"));
 
 app.registerProviders([WebSocketServiceProvider, HttpServiceProvider]);
 await app.bootstrap();
@@ -24,7 +24,7 @@ Route.post("/agents/:name/run", async (request: Request<Record<string, string>, 
 Route.get("/agents/:name/stream", async (request: Request<Record<string, string>, Record<string, string>, JsonObject>, reply: Response) => {
   const name = request.params.name ?? "";
   const input = JSON.parse(request.query.input ?? "{}") as JsonObject;
-  await streamGraphToReply(runtime, name, reply, input);
+  await streamReply(runtime, name, reply, input);
 });
 await Route.loadRoutes(__dirname);
 console.log(`StruxJS database-chat agents: ${results.filter((result) => result.definition !== null).map((result) => result.name).join(", ")}`);

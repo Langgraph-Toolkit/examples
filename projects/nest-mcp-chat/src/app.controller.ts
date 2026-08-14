@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   HttpCode,
@@ -13,49 +12,54 @@ import {
   GraphHttpExceptionFilter,
   GraphService,
 } from '@langgraph-toolkit/adapter-nestjs';
-import type { BoundGraphService } from '@langgraph-toolkit/adapter-nestjs';
-import type { RunResult } from '@langgraph-toolkit/core';
-import type { ChatInput, ChatOutput, ChatState } from './chat/chat.graph.js';
+import type {
+  BoundGraphService,
+  GraphSseMessage,
+} from '@langgraph-toolkit/adapter-nestjs';
+import type { RunResult, StepEvent } from '@langgraph-toolkit/core';
+import type {
+  DatabaseMcpAnswer,
+  DatabaseMcpContracts,
+  DatabaseMcpInput,
+  DatabaseMcpState,
+} from '@langgraph-toolkit/community/database';
+import type { Observable } from 'rxjs';
 
-interface ChatRequest {
-  readonly message: string;
-  readonly threadId?: string;
-}
+type ChatRequest = DatabaseMcpInput & { readonly threadId?: string };
+type ChatRunResult = RunResult<DatabaseMcpState, DatabaseMcpAnswer>;
+type ChatStreamMessage = GraphSseMessage<
+  StepEvent<DatabaseMcpState, DatabaseMcpContracts>
+>;
 
-type ChatRunResult = RunResult<ChatState, ChatOutput>;
 @Controller('chat')
 @UseFilters(GraphHttpExceptionFilter)
 export class AppController {
-  private readonly chat: BoundGraphService<ChatState, ChatInput, ChatOutput>;
+  private readonly chat: BoundGraphService<
+    DatabaseMcpState,
+    DatabaseMcpInput,
+    DatabaseMcpAnswer,
+    DatabaseMcpContracts
+  >;
 
   constructor(graphs: GraphService) {
-    this.chat = graphs.bind<ChatState, ChatInput, ChatOutput>('chat');
+    this.chat = graphs.bind<
+      DatabaseMcpState,
+      DatabaseMcpInput,
+      DatabaseMcpAnswer,
+      DatabaseMcpContracts
+    >('chat');
   }
 
   @Post('run')
   @HttpCode(HttpStatus.OK)
-  async run(@Body() body: ChatRequest): Promise<ChatRunResult> {
-    const input = this.toInput(body);
-    return this.chat.run(input, {
-      threadId: body.threadId,
-    });
+  run(@Body() body: ChatRequest): Promise<ChatRunResult> {
+    return this.chat.run(body, { threadId: body.threadId });
   }
 
   @Sse('stream')
-  stream(@Query() query: ChatRequest) {
-    const input = this.toInput(query);
-    return this.chat.streamSse(input, {
+  stream(@Query() query: ChatRequest): Observable<ChatStreamMessage> {
+    return this.chat.streamSse(query, {
       threadId: query.threadId,
     });
-  }
-
-  private toInput(request: ChatRequest): ChatInput {
-    if (
-      typeof request.message !== 'string' ||
-      request.message.trim().length === 0
-    ) {
-      throw new BadRequestException('message must be a non-empty string.');
-    }
-    return { message: request.message.trim() };
   }
 }

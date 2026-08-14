@@ -11,10 +11,10 @@
     "test": "node --import tsx --test test/database-chat.test.ts"
   },
   "dependencies": {
-    "@langgraph-toolkit/adapter-nestjs": "0.1.2",
-    "@langgraph-toolkit/community": "0.1.2",
-    "@langgraph-toolkit/core": "0.1.2",
-    "@langgraph-toolkit/mcp": "0.1.2",
+    "@langgraph-toolkit/adapter-nestjs": "0.2.0",
+    "@langgraph-toolkit/community": "0.2.0",
+    "@langgraph-toolkit/core": "0.2.0",
+    "@langgraph-toolkit/mcp": "0.2.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
