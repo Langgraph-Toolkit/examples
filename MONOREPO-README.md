@@ -1,196 +1,126 @@
-# @langgraph-toolkit/core
+# Langgraph-Toolkit examples
 
-**Langgraph-Toolkit** is a framework-agnostic TypeScript toolkit for typed graphs, MCP resources, human approval, checkpoints, parallel work, cost control, and production adapters. Define the graph once, then run it on **StruxJS, Express, Fastify, or NestJS** without changing graph logic. The architecture follows the same split as Redux Toolkit: a pure core plus thin host bindings.
+This repository contains **independent, CLI-shaped TypeScript projects** that demonstrate the same database-chat resource on NestJS, Express, Fastify, and StruxJS. The graph, MCP boundary, provider inference, policy defaults, and checkpoint ownership stay inside `src/database-chat`; each host only owns its framework bootstrap and adapter registration.
 
-| Layer | Package | Purpose |
-|---|---|---|
-| Core | `packages/core` | `defineGraph()` DSL, `compile()` rule enforcement, `run()` / `stream()`, permission + cost control, `testEdgeRisk`, e2e harness |
-| StruxJS | `packages/adapter-struxjs` | ServiceProvider, agent scanner, Strux checkpointer, console commands |
-| Express | `packages/adapter-express` | SSE middleware + router (`/run`, `/stream`) |
-| Fastify | `packages/adapter-fastify` | Plugin + `decorateLangGraph()` |
-| NestJS | `packages/adapter-nestjs` | DynamicModule + Injectable `LangGraphService` |
-| Checkpointers | `packages/adapter-checkpointers` | `SqlCheckpointer` (SQLite/Postgres/MySQL), `RedisCheckpointer`, `MongoCheckpointer` via driver injection |
-| MCP | `packages/mcp` | Async credentials, transport declarations, discovery, tools, resources, lifecycle, and structured MCP errors |
+The examples follow the Langgraph-Toolkit zero-config direction:
 
-## Quick start
+1. Create or obtain one resource from the application boundary.
+2. Register that resource with the host adapter.
+3. Send only business input such as `{ question }` to a run.
+4. Add a thread identifier only when a caller needs checkpointed resume.
+
+The public npm names are scoped lowercase identifiers such as `@langgraph-toolkit/core`. The product and repository display name is **Langgraph-Toolkit**.
+
+## Projects
+
+| Project | CLI-shaped entrypoint | Host responsibility | Example routes |
+|---|---|---|---|
+| `projects/nest` | `nest start` | `LangGraphModule.forRootAsync()` and typed controller binding | `/agents`, `/agents/database-chat/run`, `/agents/database-chat/stream` |
+| `projects/nest-mcp-chat` | `nest start` | Full MCP-backed chat API with e2e coverage | `/chat/run`, `/chat/stream` |
+| `projects/express` | `tsx src/server.ts` | Express middleware and router mounting | `/agents/database-chat/run`, `/agents/database-chat/stream` |
+| `projects/fastify` | `tsx src/server.ts` | Fastify plugin registration | `/agents/database-chat/run`, `/agents/database-chat/stream` |
+| `projects/strux` | `tsx bootstrap.ts` | StruxJS provider registration and agent scanning | `/agents/database-chat/run`, `/agents/database-chat/stream` |
+
+Every project is intentionally runnable on its own. It has its own `package.json`, `.env.example`, source tree, tests, and framework bootstrap. Copy a project directory into a new repository when you need a starting point rather than importing a hidden shared graph.
+
+## Run one project
+
+```bash
+cd projects/express
+cp .env.example .env
+pnpm install
+pnpm build
+pnpm test
+pnpm dev
+```
+
+Use the equivalent project directory for `fastify`, `nest`, or `strux`. The `nest-mcp-chat` project also provides a focused end-to-end command:
+
+```bash
+cd projects/nest-mcp-chat
+cp .env.example .env
+pnpm install
+pnpm build
+pnpm test:e2e
+pnpm start:dev
+```
+
+The local fixtures are deterministic, so unit and e2e tests do not need a live database or model provider. For a real MCP server, set the MCP URL and credentials in `.env`; credentials are resolved by the resource and never placed in graph input.
+
+## Resource-first composition
+
+The database-chat resource is the reusable application boundary:
 
 ```ts
-import { createMcpGateway, fromMcpCredentials } from "@langgraph-toolkit/mcp";
-import { createDatabaseChatGraph } from "./examples/database-chat/graph.js";
+import { createCommunityDatabaseMcpAgent } from "@langgraph-toolkit/community";
+import { databaseChatGateway } from "./mcp.js";
 
-const gateway = await createMcpGateway({
-  name: "analytics",
-  transport: { kind: "streamable-http", url: process.env.MCP_SERVER_URL ?? "" },
-  credentials: fromMcpCredentials(async ({ tenantId }) =>
-    loadMcpHeadersFromDatabase(tenantId)),
-}, { tenantId: "tenant-01" });
-
-const graph = createDatabaseChatGraph(gateway, {
-  global: { approvalRequired: true, maxRows: 100 },
-});
-
-const paused = await graph.run(
-  { question: "show approved records" },
-  { threadId: "thread-1", actor: actor, checkpoint: checkpointer },
-);
-
-if (paused.stoppedReason === "interrupt") {
-  const resumed = await graph.run(undefined, {
-    threadId: "thread-1",
-    actor,
-    checkpoint: checkpointer,
-    humanResponse: { approved: true },
+export async function createDatabaseChatResource() {
+  return createCommunityDatabaseMcpAgent({
+    mcp: databaseChatGateway,
+    name: "database-chat",
   });
-  console.log(resumed.output);
 }
 ```
 
-The public npm identifiers remain lowercase and scoped, such as `@langgraph-toolkit/core` and `@langgraph-toolkit/mcp`, because npm package names are normalized identifiers. **Langgraph-Toolkit** is the product and repository display name.
+The community preset infers a DeepSeek, Hugging Face, OpenAI-compatible, or deterministic mock provider from explicit options and environment variables. The MCP package owns typed database tools and context formatting. A host adapter does not recreate nodes, intent parsing, MCP clients, or provider policy.
 
-## Graph Engineer rules enforced
-
-| Rule | Mechanism |
-|---|---|
-| N1 Nodes identify themselves | Every graph has `name`; every node is a named key in `nodes` |
-| N2 Node reads declared state only | `compile()` validates nodes against declared state; nodes return field deltas merged by reducers |
-| N3 Node failure is explicit | `run()` returns `stoppedReason: "error"` with the error attached, never silent |
-| E1 Edges are first-class | `edge()` / `conditional()` objects, not magic strings in node bodies |
-| E2 Routing is deterministic | Conditional routes declare allowed targets; unknown branches are runtime errors |
-| E3 Output is verifiable | `verify` + `codeAnchor()` / `testAnchor()` gates; panel must have a non-LLM anchor |
-| L1 Loops must converge | Cycles without `converge` are rejected at compile time; dry-loop convergence at runtime |
-| L2 Runaways are bounded | `safety(recursionLimit)` enforced on every round; `cancelled()` available in node context |
-| T3 Model access via tier alias | Nodes declare `tier`; `ToolkitModelRegistry` resolves driver (OpenAI, HuggingFace, mock) without vendor imports in graph code |
-| P5 Interruptions checkpoint | `interruptBefore` persists state before pausing; `resumeFrom` + `humanResponse` continue |
-| A1 Policy at run start | `RunPolicy` returns `allow | deny | interrupt`; `deny` throws `PermissionDeniedError` | `actor`, `policy: rolePolicy(...)`, `combinePolicies(...)` |
-| A2 Tier downgrade at runtime | `TierResolver` can lower a node's tier; unbound tiers are rejected | `tierResolver`, `planTierResolver(...)` |
-| A3 Token budget per actor-tier | `withTokenBudget(provider, budget, actor)` charges per tier and throws `TokenBudgetExceededError` | `tokenBudget`, `resetTokenLedger()` |
-| A4 Dangerous nodes auto-interrupt | `node(fn, { risk: "dangerous" })` interrupts unless in `interruptBefore` | `risk("dangerous")`, `ctx.actor` |
-
-## Host bindings
-
-Each adapter is under 400 lines. The graph code never imports the host.
-
-### StruxJS (primary host)
-
-```ts
-import { LangGraphServiceProvider } from "@langgraph-toolkit/adapter-struxjs";
-// app/Agents/<workflow>/index.js is auto-scanned at boot, mirroring the StruxJS model.
-app.registerProviders([LangGraphServiceProvider]);
-```
-
-### Express
-
-```ts
-import { langgraphRouter, sseMiddleware } from "@langgraph-toolkit/adapter-express";
-app.use(express.json());
-app.use(sseMiddleware);
-app.use(langgraphRouter({ graphs: registry, path: "/agents/:name" }));
-// GET  /agents/:name/stream  -> text/event-stream
-// POST /agents/:name/run     -> JSON run result
-```
-
-### Fastify
-
-```ts
-import { langgraphFastify, decorateLangGraph } from "@langgraph-toolkit/adapter-fastify";
-decorateLangGraph(fastify, registry); // call BEFORE register
-await fastify.register(langgraphFastify, { path: "/agents/:name" });
-```
+## Host adapters
 
 ### NestJS
 
 ```ts
-import { LangGraphModule, LangGraphService } from "@langgraph-toolkit/adapter-nestjs";
-// register the module with your registry once; inject LangGraphService anywhere
-```
-
-## Checkpointers on any database
-
-Checkpointers live in `@langgraph-toolkit/adapter-checkpointers` and take an injected driver, so the package carries zero database dependencies at build time (Redux Toolkit style): use better-sqlite3, pg, or mysql2 for SQL; ioredis for Redis; the mongodb driver for MongoDB.
-
-```ts
-import { SqlCheckpointer, RedisCheckpointer, MongoCheckpointer, makeSyncSqlDriver } from "@langgraph-toolkit/adapter-checkpointers";
-import Database from "better-sqlite3";
-
-// SQLite (or Postgres/MySQL: pass the dialect)
-const sql = new SqlCheckpointer(makeSyncSqlDriver(new Database("./cp.sqlite")));
-// Redis: driver { get, set, del, lpush, lrange }
-const redis = new RedisCheckpointer(myRedisDriver, { prefix: "lg:", ttlSeconds: 3600 });
-// MongoDB: driver { findOne, updateOne, find }
-const mongo = new MongoCheckpointer(myMongoDriver);
-
-await registry.run("admin-chat", input, { threadId: "t1", checkpoint: sql });
-```
-
-## Permissions, tiers, and cost control
-
-Every run can carry an `Actor`, a `RunPolicy`, a `TierResolver`, and a `TokenBudget`. The executor enforces them in order: policy at run start (A1), tier resolution before model lookup (A2), token charging per actor-tier (A3), and automatic interrupt before any `risk("dangerous")` node (A4).
-
-```ts
-import {
-  rolePolicy, combinePolicies, planTierResolver,
-  withTokenBudget, testEdgeRisk, e2eActor,
-  PermissionDeniedError, TokenBudgetExceededError,
-} from "@langgraph-toolkit/core";
-
-const policy = rolePolicy({ "admin-chat": ["admin", "operator"] });
-const tiers = planTierResolver({
-  free: { strong: "cheap" },   // free users get downgraded transparently
-  pro:  { strong: "strong" },
+LangGraphModule.forRootAsync({
+  global: true,
+  useFactory: createDatabaseChatResource,
 });
-const chat = withTokenBudget(myProvider, {
-  perTier: { __default__: { limit: 100_000, windowMs: 3_600_000 } },
-}, actor);
 ```
 
-Probe the whole permission surface before shipping with the built-in risk harness. It replays each actor against the graph and reports violations like `policy_deny_bypassed`, `tier_escalation`, `dangerous_node_uninterrupted`, `budget_not_enforced`, and `rogue_field_leak`:
+Bind a graph once in the controller with `GraphService.bind<State, Input, Output>()`. Use `streamSse()` with Nest's `@Sse()` decorator and `GraphHttpExceptionFilter` for typed error responses. The request body remains the business input; no actor, policy, or checkpoint object is required on every call.
+
+### Express and Fastify
+
+Create the resource once, pass its runtime to the thin adapter, and mount the adapter's run and stream routes. The adapter serializes step, thinking, token, reasoning, tool, interrupt, and terminal events; the resource remains framework-neutral.
+
+### StruxJS
+
+Export a ready resource from `app/Agents/<workflow>` and let `scanAndRegisterAgents()` discover it during application boot. StruxJS owns provider registration and lifecycle; Core and MCP continue to own graph execution and context.
+
+## Persistence and resume
+
+When an application needs persistence, configure one driver-backed checkpointer while composing the resource or graph. `@langgraph-toolkit/adapter-checkpointers` supports SQL, Redis, and MongoDB through injected drivers, so the graph does not import a database client. A normal call still accepts only business input. A resume call adds a `threadId` and the typed human answer required by the interrupt contract.
 
 ```ts
-const probe = await testEdgeRisk(compiledGraph, {
-  actors: [e2eActor("bob", ["guest"]), e2eActor("alice", ["admin"])],
-  policy, tierResolver: tiers, tokenBudget: budget,
-});
-if (probe.violations.length > 0) throw new Error(JSON.stringify(probe.violations));
+const result = await graph.run({ question: "count users" });
+const resumed = await graph.run(
+  { question: "continue" },
+  { threadId: "thread-1", humanResponse: { approved: true, note: null } },
+);
 ```
 
-## E2E testing for contributors
+The exact checkpoint option belongs at graph or resource construction time. Do not thread a checkpointer through every HTTP controller or business function.
 
-The core ships an end-to-end harness (`packages/core/src/e2e.ts`) so contributors can test a graph against a real host: `e2eRun(url, req)`, `e2eStream(url, req)`, `expectDone(result)`, `expectInterrupted(result)`, `expectTerminal(stream)`, and `e2eScenarioResume(...)` for full interrupt-then-resume round trips. Reference harnesses are in `scripts/`:
+## Contributor contract
 
-- `e2e-http-test.ts` - boots Express, Fastify, and NestJS, hits `/run` on all three, asserts `ALL_E2E_PASS`
-- `e2e-strux-test.mts` - StruxJS lifecycle: interrupt, checkpoint persist, resume, SSE, workflow scanning, queue dispatch
-- `e2e-edge-test.mts` - 20 edge cases: safety, timeout, cancellation, anchors, verifiers, cycles, state merging
+Each package remains independently publishable:
 
-## Queue workers
+| Package | Owns |
+|---|---|
+| `@langgraph-toolkit/core` | Typed state, graph definition, execution, streaming, cancellation, gates, interrupts, and runtime contracts |
+| `@langgraph-toolkit/mcp` | MCP transport declarations, typed tools, context formatting, database presets, and lifecycle contracts |
+| `@langgraph-toolkit/community` | Provider inference, model tiers, fallback behavior, and contributor-owned use cases |
+| `@langgraph-toolkit/adapter-*` | Framework lifecycle, route binding, serialization, or persistence drivers only |
 
-Queue dispatch is a core capability, not a fifth host. Any queue (Strux Queue, BullMQ, SQS) plugs in via `QueueAdapter`:
+Contributors should add a typed contract, deterministic tests, JSDoc/TSDoc for every exported symbol, and a complete independent example when a feature changes developer ergonomics. Graph code must not import an HTTP framework, and intent detection must use an LLM contract rather than regex matching.
 
-```ts
-import { registerQueueAdapter, dispatchToQueue } from "@langgraph-toolkit/core";
-registerQueueAdapter("default", { enqueue: (job) => bullQueue.add("graph", job) });
-await dispatchToQueue(registry, "admin-chat", { messages: [...] });
-```
+## Validation
 
-## Development
+From a package repository, run:
 
 ```bash
-npm install          # workspaces: all packages + examples
-npm run build        # compile every package (tsc, zero errors required)
-npm run test         # vitest: 57+ unit tests across core + adapter packages
-bash scripts/run-examples.sh   # e2e: run the same graph on 4 hosts
-npx tsx scripts/e2e-http-test.ts      # E2E HTTP on Express/Fastify/NestJS
-npx tsx scripts/e2e-strux-test.mts    # E2E StruxJS lifecycle (10 scenarios)
-npx tsx scripts/e2e-edge-test.mts     # E2E edge cases (20 scenarios)
+npm install
+npm run build
+npm test
 ```
 
-Examples in `examples/` share one graph (`examples/shared/agent.ts`) to prove the core is identical across hosts. Contributors: read `CONTRIBUTING.md` for adapter patterns, the e2e harness, and the PR checklist.
-
-## Design philosophy
-
-1. **Core is pure TypeScript.** No Express, Fastify, Nest, or Strux imports inside `packages/core`.
-2. **Fail fast at compile time.** `compile()` rejects unanchored loops, missing entries, ghost branches, and unknown state fields before anything runs.
-3. **Reducers over mutable state.** `messagesValue()` and `reducedValue()` make merges explicit; nodes return deltas, never full snapshots.
-4. **Interruptions first.** Human-in-the-loop is a first-class primitive (`interruptBefore` + checkpoint + resume), the backbone of safe admin/ops agents.
-5. **Tier aliases over vendor imports.** Graph code says `tier: "strong"`, not `import OpenAI`. Swapping providers is a config change.
-6. **Permission is a first-class run option.** Actors, policies, tiers, and token budgets are plain options on `run()`, and `testEdgeRisk` proves they hold before production.
-7. **Any database, any queue, any model.** Driver injection keeps adapters dependency-free: SQLite, Postgres, MySQL, Redis, MongoDB; BullMQ, SQS, Strux Queue; OpenAI, HuggingFace, and any OpenAI-compatible endpoint.
+From an independent example, run its own `build`, `check`, and `test` scripts. The repository's source is deliberately split so a contributor can test one adapter without installing or importing the other hosts.

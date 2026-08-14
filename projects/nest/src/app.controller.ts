@@ -1,27 +1,58 @@
 import { Body, Controller, Get, Param, Post, Res } from "@nestjs/common";
-import type { Response } from "express";
-import { GraphService } from "@langgraph-toolkit/adapter-nestjs";
+import {
+  BoundGraphService,
+  GraphHttpExceptionFilter,
+  GraphService,
+  type GraphSseMessage,
+} from "@langgraph-toolkit/adapter-nestjs";
+import { Body, Controller, Get, Headers, Post, Query, Sse, UseFilters } from "@nestjs/common";
+import type {
+  DatabaseMcpAnswer,
+  DatabaseMcpContracts,
+  DatabaseMcpInput,
+  DatabaseMcpState,
+} from "@langgraph-toolkit/mcp";
+import type { Observable } from "rxjs";
 
 @Controller("agents")
+@UseFilters(GraphHttpExceptionFilter)
 export class AppController {
-  constructor(private readonly graphs: GraphService) {}
+  private readonly graphs: GraphService;
+  private readonly chat: BoundGraphService<
+    DatabaseMcpState,
+    DatabaseMcpInput,
+    DatabaseMcpAnswer,
+    DatabaseMcpContracts
+  >;
+
+  constructor(graphs: GraphService) {
+    this.graphs = graphs;
+    this.chat = graphs.bind<
+      DatabaseMcpState,
+      DatabaseMcpInput,
+      DatabaseMcpAnswer,
+      DatabaseMcpContracts
+    >("database-chat");
+  }
 
   @Get()
   list(): string[] {
     return this.graphs.list();
   }
 
-  @Post(":name/run")
-  run(@Param("name") name: string, @Body() body: Record<string, unknown>) {
-    return this.graphs.run(name, body, { threadId: typeof body.threadId === "string" ? body.threadId : undefined });
+  @Post("database-chat/run")
+  run(@Body() input: DatabaseMcpInput, @Headers("x-thread-id") threadId?: string) {
+    return this.chat.run(input, threadId === undefined ? undefined : { threadId });
   }
 
-  @Get(":name/stream")
-  async stream(@Param("name") name: string, @Res() response: Response): Promise<void> {
-    response.setHeader("Content-Type", "text/event-stream");
-    response.setHeader("Cache-Control", "no-cache");
-    response.setHeader("Connection", "keep-alive");
-    for await (const event of this.graphs.stream(name, {})) response.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
-    response.end();
+  @Sse("database-chat/stream")
+  stream(
+    @Query("question") question: string,
+    @Headers("x-thread-id") threadId?: string,
+  ): Observable<GraphSseMessage> {
+    return this.chat.streamSse(
+      { question },
+      threadId === undefined ? undefined : { threadId },
+    );
   }
 }
