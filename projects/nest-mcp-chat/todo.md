@@ -14,3 +14,9 @@
 ## Live integration note
 
 The live MCP and model smoke test requires credentials supplied through the environment at run time. Secrets must never be committed, written to a source file, or included in a release report.
+
+## CI publishing follow-up
+
+- [x] Inspect the GitHub Actions workflow used for package publishing.
+- [x] Configure and use npm Trusted Publishing with GitHub OIDC; no long-lived npm token is required by the workflow.
+- [x] Run the release workflow and verify every `@langgraph-toolkit/*@0.1.2` package on npm.
