@@ -1,7 +1,15 @@
 # StruxJS database-chat example
 
-This project follows the official StruxJS CLI scaffold and keeps the normal `bootstrap.ts` lifecycle. The public framework dependency is `struxjs-core`, while the complete database-chat resource lives in `app/Agents/database-chat` and is discovered by `scanAndRegisterAgents` using the standard StruxJS agent convention.
+This independent project follows the official StruxJS CLI scaffold. The public framework dependency is `struxjs-core`; the complete database-chat resource lives in `app/Agents/database-chat`, while `bootstrap.ts` owns only provider registration, agent scanning, and native route lifecycle.
 
-Copy `.env.example` to `.env`, run `pnpm install`, then `pnpm dev`. The bootstrap exposes `GET /agents`, `POST /agents/:name/run`, and `GET /agents/:name/stream` through the native StruxJS router. Requests only carry business input and an optional thread id.
+For a fresh host, start with `npx create-struxjs-app database-chat`, then add `@langgraph-toolkit/adapter-struxjs` and copy the resource structure from this project.
 
-For a fresh host, start from the official scaffold with `npx create-struxjs-app database-chat`, then install the Langgraph-Toolkit adapter and copy this resource directory into `app/Agents/database-chat`.
+```bash
+cp .env.example .env
+pnpm install
+pnpm dev
+```
+
+The host exposes `GET /agents`, `POST /agents/:name/run`, and `GET /agents/:name/stream` through the native StruxJS router. Requests carry business input and an optional thread id only. The project uses `struxjs-core` rather than the unavailable `struxjs` package name.
+
+The `app/Agents/database-chat/index.ts` module default-exports the ready resource facade, not only `graph.definition`. This lets the Strux adapter preserve the resource-owned MCP gateway and inferred model runtime while still discovering the agent through the conventional folder scanner.

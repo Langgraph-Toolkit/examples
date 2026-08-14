@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
 import { Application, HttpServiceProvider, WebSocketServiceProvider, Router, Route } from "struxjs-core";
+import type { Request, Response } from "struxjs-core";
 import type { JsonObject } from "@langgraph-toolkit/core";
 import { scanAndRegisterAgents, streamGraphToReply } from "@langgraph-toolkit/adapter-struxjs";
 
@@ -15,13 +16,14 @@ await app.bootstrap();
 const router = app.container.make<Router>("router");
 Route.setRouter(router);
 Route.get("/agents", async () => runtime.list());
-Route.post("/agents/:name/run", async (body: JsonObject, request: { params?: Record<string, string> }) => {
-  const name = request.params?.name ?? "";
+Route.post("/agents/:name/run", async (request: Request<Record<string, string>, Record<string, string>, JsonObject>) => {
+  const name = request.params.name ?? "";
+  const body = request.body;
   return runtime.run(name, body, { threadId: typeof body.threadId === "string" ? body.threadId : undefined });
 });
-Route.get("/agents/:name/stream", async (request: { params?: Record<string, string>; query?: Record<string, string> }, reply: { setHeader?: (name: string, value: string) => void; write?: (chunk: string) => void; end?: () => void }) => {
-  const name = request.params?.name ?? "";
-  const input = JSON.parse(request.query?.input ?? "{}") as JsonObject;
+Route.get("/agents/:name/stream", async (request: Request<Record<string, string>, Record<string, string>, JsonObject>, reply: Response) => {
+  const name = request.params.name ?? "";
+  const input = JSON.parse(request.query.input ?? "{}") as JsonObject;
   await streamGraphToReply(runtime, name, reply, input);
 });
 await Route.loadRoutes(__dirname);

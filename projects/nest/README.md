@@ -1,5 +1,11 @@
 # NestJS database-chat example
 
-This project is generated from the Nest CLI and is independently runnable. Copy `.env.example` to `.env`, run `pnpm install`, then `pnpm start:dev`. The graph resource is under `src/database-chat`; `src/app.module.ts`, `src/app.controller.ts`, and `src/main.ts` contain the complete Nest integration.
+This independent Nest CLI project demonstrates that NestJS owns module and controller wiring while the database-chat resource owns Core, MCP, provider, policy, and checkpoint configuration.
 
-The server exposes `GET /agents`, `POST /agents/database-chat/run`, and `GET /agents/database-chat/stream`. Nest's `GraphService` is the only adapter boundary; callers do not pass actor, policy, or checkpoint configuration on every request.
+```bash
+cp .env.example .env
+pnpm install
+pnpm start:dev
+```
+
+The resource lives in `src/database-chat`. `src/app.module.ts` imports `LangGraphModule.forRoot({ runtime })`, and the controller forwards typed input to `GraphService`. The server exposes `GET /agents`, `POST /agents/database-chat/run`, and `GET /agents/database-chat/stream` on port 3513. Callers do not pass actor, policy, or checkpoint configuration on every request.

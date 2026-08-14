@@ -1,5 +1,11 @@
 # Express database-chat example
 
-This project is generated from the Express TypeScript scaffold and is independently runnable. Copy `.env.example` to `.env`, run `pnpm install`, then `pnpm dev`. The complete resource is under `src/database-chat`; `src/server.ts` is the only host-specific wiring.
+This independent Express CLI project demonstrates the zero-config composition path: create the database-chat resource once, then mount `langgraphRouter` without rebuilding MCP, provider, actor, policy, or checkpoint options inside each route.
 
-The server exposes `GET /agents`, `POST /agents/database-chat/run`, and `GET /agents/database-chat/stream`. A request only needs `question` and may include `threadId`.
+```bash
+cp .env.example .env
+pnpm install
+pnpm dev
+```
+
+The resource lives in `src/database-chat`. `src/server.ts` owns only Express bootstrap, JSON middleware, SSE middleware, and router mounting. The server exposes `GET /agents`, `POST /agents/database-chat/run`, and `GET /agents/database-chat/stream` on port 3511. A request only needs `question` and may include `threadId`.

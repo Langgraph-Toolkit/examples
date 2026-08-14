@@ -5,5 +5,7 @@ import { createDatabaseChatResource } from "../app/Agents/database-chat/resource
 test("Strux resource exposes database-chat without host runtime parameters", async () => {
   const resource = await createDatabaseChatResource();
   assert.deepEqual(resource.runtime.list(), ["database-chat"]);
-  assert.ok(await resource.runtime.run("database-chat", { question: "How many users are there?" }));
+  const result = await resource.run({ question: "How many users are there?" });
+  assert.equal(result.stoppedReason, "interrupt");
+  assert.equal(result.state.rows.length, 2);
 });
