@@ -1,7 +1,10 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { createDatabaseAgent, createMemoryGateway } from '@langgraph-toolkit/community/database';
+import {
+  createDatabaseAgent,
+  createMemoryGateway,
+} from '@langgraph-toolkit/community/database';
 import type {
   DatabaseMcpAnswer,
   DatabaseMcpInput,
