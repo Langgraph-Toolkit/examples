@@ -1,158 +1,62 @@
-# Langgraph-Toolkit examples
+# Langgraph-Toolkit Chat-MCP example monorepo
 
-This repository contains **independent, CLI-shaped TypeScript projects** that demonstrate the same typed resource on NestJS, Express, Fastify, and StruxJS. The graph, MCP boundary, provider inference, policy defaults, and checkpoint ownership stay inside the resource; each host only owns framework bootstrap and adapter registration.
+This repository demonstrates one graph resource across four complete, independently runnable framework applications. The **display name** is Langgraph-Toolkit; public packages use scoped lowercase names such as `@langgraph-toolkit/core`.
 
-The examples follow the Langgraph-Toolkit zero-config direction:
+## Layout
 
-1. Create or obtain one resource from the application boundary.
-2. Pass the resource runtime to the host adapter factory.
-3. Send only business input such as `{ question }` to a run.
-4. Add a thread identifier only when a caller needs checkpointed resume.
-
-The public npm names are scoped lowercase identifiers such as `@langgraph-toolkit/core`. The product and repository display name is **Langgraph-Toolkit**.
-
-## Projects
-
-| Project | CLI-shaped entrypoint | Host responsibility | Example routes |
-|---|---|---|---|
-| `projects/nest` | `nest start` | Nest module/controller binding | `/agents`, `/agents/database-chat/run`, `/agents/database-chat/stream` |
-| `projects/nest-mcp-chat` | `nest start` | MCP-backed chat API with e2e coverage | `/chat/run`, `/chat/stream` |
-| `projects/express` | `tsx src/server.ts` | Express middleware and router mounting | `/agents/database-chat/run`, `/agents/database-chat/stream` |
-| `projects/fastify` | `tsx src/server.ts` | Fastify plugin registration | `/agents/database-chat/run`, `/agents/database-chat/stream` |
-| `projects/strux` | `tsx bootstrap.ts` | StruxJS provider registration and agent scanning | `/agents/database-chat/run`, `/agents/database-chat/stream` |
-
-Every project is runnable on its own. It has its own `package.json`, `.env.example`, source tree, tests, and framework bootstrap. Copy a project directory into a new repository when you need a starting point rather than importing a hidden shared graph.
-
-## Run one project
-
-```bash
-cd projects/express
-cp .env.example .env
-pnpm install
-pnpm build
-pnpm test
-pnpm dev
-```
-
-Use the equivalent project directory for `fastify`, `nest`, or `strux`. The `nest-mcp-chat` project also provides a focused end-to-end command:
-
-```bash
-cd projects/nest-mcp-chat
-cp .env.example .env
-pnpm install
-pnpm build
-pnpm test:e2e
-pnpm start:dev
-```
-
-Local fixtures are deterministic, so unit and e2e tests do not need a live database or model provider. For a real MCP server, set the MCP URL and credentials in `.env`; credentials are resolved by the resource and never placed in graph input.
-
-## Resource-first composition
-
-The database-chat resource is the reusable application boundary. The database preset is optional and lives outside the Community root:
-
-```ts
-import { createDatabaseAgent } from "@langgraph-toolkit/community/database";
-import { createMCP, useStreamableHttp } from "@langgraph-toolkit/mcp";
-
-export async function createDatabaseChatResource() {
-  const mcp = createMCP({
-    servers: {
-      database: useStreamableHttp(process.env.DATABASE_MCP_URL ?? "http://localhost:8811/mcp"),
-    },
-  });
-  const resource = await createDatabaseAgent({
-    mcp: await mcp.server("database"),
-    name: "database-chat",
-  });
-  return {
-    ...resource,
-    close: async () => {
-      await resource.close();
-      await mcp.close();
-    },
-  };
-}
-```
-
-For non-database workflows, compose `createMCPAgent`, `createRAG`, or a Core graph directly. The host adapter never recreates nodes, intent parsing, MCP clients, or provider policy.
-
-## Host adapters
-
-### Express
-
-```ts
-const resource = await createDatabaseChatResource();
-const host = createExpressAdapter(resource.runtime);
-app.use(express.json());
-app.use(host.middleware);
-app.use("/agents", host.router);
-```
-
-### Fastify
-
-```ts
-const resource = await createDatabaseChatResource();
-const host = createFastifyAdapter(resource.runtime);
-await app.register(host.plugin);
-```
-
-### NestJS
-
-```ts
-const resource = await createDatabaseChatResource();
-const host = createNestJSAdapter(resource.runtime);
-
-@Module({ imports: [host.module] })
-export class AppModule {}
-```
-
-`LangGraphModule.forRoot()` and `forRootAsync()` remain available when a Nest application needs complete dynamic-module composition. The factory is the short path; the native API is the escape hatch.
-
-### StruxJS
-
-```ts
-const resource = await createDatabaseChatResource();
-const host = createStruxJSAdapter(resource.runtime);
-host.provider.register(app);
-await host.provider.boot(app);
-```
-
-For scanner-driven applications, export the ready resource as the agent folder's default export and use `registerAgents()`.
-
-## Persistence and resume
-
-When an application needs durable state, configure persistence while composing the resource. The high-level facade supports in-memory development, injected SQL or Mongo checkpointers, and the Redis convenience path:
-
-```ts
-import { useRedis } from "@langgraph-toolkit/adapter-checkpointers";
-
-const persistence = useRedis({ driver: redisDriver, prefix: "app:graph:" });
-```
-
-Attach the corresponding Core checkpointer at graph/resource construction time. A normal call still accepts only business input. A resume call adds a `threadId` and the typed human answer required by the interrupt contract.
-
-## Contributor contract
-
-Each package remains independently publishable:
-
-| Package | Owns |
+| Directory | Ownership |
 |---|---|
-| `@langgraph-toolkit/core` | Typed state, graph definition, execution, events, cancellation, gates, interrupts, and runtime contracts |
-| `@langgraph-toolkit/mcp` | Generic MCP transport declarations, multi-server connector, typed tools, context formatting, and lifecycle contracts |
-| `@langgraph-toolkit/community` | Provider inference, model policies, RAG, and contributor-owned generic use cases |
-| `@langgraph-toolkit/adapter-*` | Framework lifecycle, route binding, serialization, or persistence drivers only |
+| `chat-mcp/` | Explicit model registry, multi-server MCP connector, typed tools, LLM-derived intent, ChatState, agents, nodes, edges and graph lifecycle. |
+| `express-mcp-chat/` | Express bootstrap and adapter mounting. |
+| `fastify-mcp-chat/` | Fastify bootstrap and plugin mounting. |
+| `nest-mcp-chat/` | Nest CLI scaffold with resource factory, module and controller. |
+| `struxjs-mcp-chat/` | StruxJS bootstrap, provider and native router integration. |
 
-Contributors should add a typed contract, deterministic tests, TSDoc for every exported symbol, and a complete independent example when a feature changes developer ergonomics. Graph code must not import an HTTP framework, and intent detection must use an LLM contract rather than regex matching.
+Each host keeps its own manifest, environment template, README and test suite. The hosts share source composition deliberately, but never call another host. The shared source is a visible application resource rather than a framework package or opaque product preset.
 
-## Validation
+## Explicit configuration
 
-From a package repository, run:
+Copy a host's `.env.example` to `.env` and configure these variables before starting:
 
-```bash
-npm install
-npm run build
-npm test
+```dotenv
+MODEL_DRIVER=
+MODEL_NAME=
+MODEL_API_KEY=
+MODEL_BASE_URL=
+MCP_SERVER_URL=
 ```
 
-From an independent example, run its own `build`, `check`, and `test` scripts. The source is deliberately split so a contributor can test one adapter without installing or importing the other hosts.
+Model configuration is explicit and fail-fast. Community has no auto-selected provider, credential fallback or hidden mock. The Chat-MCP resource may be extended with additional named MCP servers in `chat-mcp/server.ts` without changing framework hosts.
+
+## Graph contract
+
+`chat-mcp/state.ts` exposes query, intent, plan, subtasks, agent results, draft, score, retry count and final response. `workflow.ts` makes supervisor routing, parallel agents, join, reflection, approval interrupt, evaluation, checkpoint, retry and fallback readable in source. Intent detection is LLM-based; it is not derived from regex matching.
+
+The lifecycle contract is uniform across every host:
+
+| Method | Path | Contract |
+|---|---|---|
+| `POST` | `/invoke` | Run a graph invocation. |
+| `POST` | `/stream` | Receive SSE graph events. |
+| `POST` | `/resume` | Supply a human response to an interrupt. |
+| `POST` | `/cancel` | Stop a thread. |
+| `GET` | `/state` | Read one thread's latest state. |
+| `GET` | `/history` | Read checkpoint history. |
+| `POST` | `/replay` | Re-run from a checkpoint. |
+| `POST` | `/fork` | Branch a checkpoint to a new thread. |
+
+## Run and validate
+
+```bash
+cd express-mcp-chat
+cp .env.example .env
+npm run check
+npm run test
+npm run dev
+```
+
+At repository scope, use `npm run check`, `npm run build` and `npm run test` to validate all four applications. Packages remain independently publishable, adapters own transport behavior only, and neither Core, MCP nor Community owns a Chat-MCP workflow.
+
+## Contributor rules
+
+Keep a new graph resource explicit about state, node, edge, tool, interrupt and output contracts. Keep adapter files thin and framework-native. Add strict type coverage, deterministic test doubles and TSDoc for public APIs. A new contributor feature belongs in Core only when it is a generic graph primitive; it belongs in MCP only when it is generic transport, discovery, routing or tool composition; it belongs in Community only when it is an opt-in provider or reusable capability without a hidden provider choice or application workflow.

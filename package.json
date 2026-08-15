@@ -1,17 +1,15 @@
 {
   "name": "@langgraph-toolkit/examples",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "pnpm -r check",
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "check:canonical": "pnpm --dir projects/canonical-workflow check",
-    "start:canonical": "pnpm --dir projects/canonical-workflow start",
-    "dev:express": "pnpm --dir projects/express dev",
-    "dev:fastify": "pnpm --dir projects/fastify dev",
-    "dev:nest": "pnpm --dir projects/nest start:dev",
-    "dev:strux": "pnpm --dir projects/strux dev"
+    "check": "npm --prefix express-mcp-chat run check && npm --prefix fastify-mcp-chat run check && npm --prefix nest-mcp-chat run check && npm --prefix struxjs-mcp-chat run check",
+    "build": "npm --prefix express-mcp-chat run build && npm --prefix fastify-mcp-chat run build && npm --prefix nest-mcp-chat run build && npm --prefix struxjs-mcp-chat run build",
+    "test": "npm --prefix express-mcp-chat run test && npm --prefix fastify-mcp-chat run test && npm --prefix nest-mcp-chat run test && npm --prefix struxjs-mcp-chat run test",
+    "dev:express": "npm --prefix express-mcp-chat run dev",
+    "dev:fastify": "npm --prefix fastify-mcp-chat run dev",
+    "dev:nest": "npm --prefix nest-mcp-chat run start:dev",
+    "dev:struxjs": "npm --prefix struxjs-mcp-chat run dev"
   }
 }

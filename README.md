@@ -1,75 +1,40 @@
-# Langgraph-Toolkit examples
+# Langgraph-Toolkit Chat-MCP examples
 
-**One resource, multiple hosts, zero duplicated graph configuration.** This repository contains six independent TypeScript projects. Each project is scaffolded with its framework CLI and owns a complete resource. `database-chat` is one optional convenience example, not a restriction on the toolkit's workflow model. There is no shared host runtime and no hidden root application that must be started first.
+This repository contains one **transparent Chat-MCP resource** and four independently runnable framework applications. The graph is not a product preset: its model tiers, MCP connector, state, nodes, edges, routing, approvals, evaluation, retry, fallback and checkpoint lifecycle are readable and editable in [`chat-mcp`](./chat-mcp).
 
-## Canonical 0.2.0 quickstart
+| Application | Framework responsibility | Start command | Port |
+|---|---|---|---:|
+| [Express Chat-MCP](./express-mcp-chat) | Express server and middleware mounting | `npm run dev` | 3511 |
+| [Fastify Chat-MCP](./fastify-mcp-chat) | Fastify plugin registration | `npm run dev` | 3512 |
+| [NestJS Chat-MCP](./nest-mcp-chat) | Nest module, provider and controller integration | `npm run start:dev` | 3000 |
+| [StruxJS Chat-MCP](./struxjs-mcp-chat) | StruxJS application, provider and native router lifecycle | `npm run dev` | 3514 |
 
-[`projects/canonical-workflow`](./projects/canonical-workflow) is the shortest framework-neutral, runnable workflow. It uses `createState`, `createWorkflow`, `.checkpoint()`, `.compile()`, and `.invoke()` from the canonical Core root entrypoint. No adapter, manual identity configuration, or deep relative source import is needed.
-
-```bash
-pnpm check:canonical
-pnpm --dir projects/canonical-workflow build
-pnpm start:canonical
-```
-
-Use `@langgraph-toolkit/core/low-level` only for explicit `defineGraph` topology that cannot be expressed through the fluent API. The root Core import remains canonical.
-
-## Choose a project
-
-Start with the project whose application boundary is closest to yours. Every row links to a self-contained project with its own manifest, environment template, source tree and README.
-
-| Project | When to choose it | Start command | Port |
-| --- | --- | --- | ---: |
-| [Canonical workflow](./projects/canonical-workflow) | You need a framework-neutral typed workflow before introducing HTTP. | `pnpm start:canonical` | N/A |
-| [Express database-chat](./projects/express) | You mount an existing Express router. | `pnpm dev` | 3511 |
-| [Fastify database-chat](./projects/fastify) | You want plugin registration and Fastify reply lifecycle. | `pnpm dev` | 3512 |
-| [NestJS database-chat](./projects/nest) | You use modules, providers and controllers. | `pnpm start:dev` | 3513 |
-| [NestJS MCP chat](./projects/nest-mcp-chat) | You need a one-to-one chat API backed by one or more named MCP servers. | `pnpm run start:dev` | 3000 |
-| [StruxJS database-chat](./projects/strux) | You use provider registration and agent scanning. | `pnpm dev` | 3514 |
-
-## What the examples prove
-
-The resource is defined once per project boundary and keeps the same responsibilities: typed state, MCP gateway, model selection, retrieval or tool planning, optional policy, grounding, streaming, and tests. A database-chat project additionally demonstrates schema discovery and read-only query planning. The host only performs framework-native bootstrap and mounts the resource.
-
-| Project | Scaffold command | Start command | Port | Host responsibility |
-|---|---|---:|---:|---|
-| Express | `pnpm dlx express-generator-typescript --no-view express` | `pnpm dev` | 3511 | Mount the router |
-| Fastify | `pnpm dlx fastify-cli generate fastify --lang=ts` | `pnpm dev` | 3512 | Register the plugin |
-| NestJS | `pnpm dlx @nestjs/cli new nest --package-manager pnpm --skip-git` | `pnpm start:dev` | 3513 | Import the module |
-| StruxJS | `npx create-struxjs-app strux` | `pnpm dev` | 3514 | Register the provider and scan agents |
-
-## Run one project independently
-
-```bash
-cd projects/express
-cp .env.example .env
-pnpm install
-pnpm dev
-```
-
-Provider choice is inferred from `DEEPSEEK_API_KEY`, then `HF_TOKEN`, then a deterministic fallback. The example keeps credentials out of graph input. Each project has its own package manifest, TypeScript config, environment template, resource declaration, framework adapter wiring, and contributor test.
-
-For a named-server MCP chat application, choose [NestJS MCP chat](./projects/nest-mcp-chat), set `MCP_URL` in `.env`, and follow its project README. For a database-chat resource mounted into a different host, choose the corresponding framework row above.
-
-Every host exposes `GET /agents`, `POST /agents/database-chat/run`, and `GET /agents/database-chat/stream`. Requests only need `question` and an optional `threadId`; MCP, provider, policy, checkpoint, and graph runtime defaults are composed before the host starts.
-
-## Flexible project structure
+## Resource topology
 
 ```text
-projects/<framework>/
-├── .env.example
-├── package.json
-├── tsconfig.json
-└── src/ or app/
-    ├── resource/
-    │   ├── mcp.ts
-    │   ├── resource.ts
-    │   └── index.ts
-    └── server.ts or framework bootstrap/controller files
+chat-mcp/
+├── models.ts       explicit model registry and fail-fast validation
+├── state.ts        ChatState fields, reducer, history, snapshots and recovery
+├── tools.ts        typed local tool registry
+├── agents.ts       LLM intent classifier and MCP-aware agents
+├── workflow.ts     visible node, edge and fluent lifecycle composition
+├── server.ts       multi-server MCP resource and graph lifecycle registration
+└── index.ts         public example resource exports
 ```
 
-No project imports another project. No project imports a deep relative path from the monorepo. The same package boundaries work in a background worker, a CLI, or a framework not included in this repository. New host projects should use `createExpressAdapter`, `createFastifyAdapter`, `createNestJSAdapter`, or `createStruxJSAdapter`; native router, plugin, module, and scanner APIs remain escape hatches.
+Every application imports this graph source only for its composition boundary. No host imports another host, and no package conceals a database-specific workflow. Model configuration is never inferred from provider-specific environment variables: every `.env.example` requires `MODEL_DRIVER`, `MODEL_NAME`, `MODEL_API_KEY`, `MODEL_BASE_URL`, and `MCP_SERVER_URL`.
 
-## Contributor test contract
+## Canonical HTTP lifecycle
 
-Each project test should prove the smallest useful vertical slice: MCP gateway creation, schema discovery, query execution, final answer, stream events, and the framework's own registration lifecycle. Extend the resource or add a new host only when the public contract remains typed and the host wiring stays thin.
+All four hosts expose the same routes: `POST /invoke`, `POST /stream`, `POST /resume`, `POST /cancel`, `GET /state`, `GET /history`, `POST /replay`, and `POST /fork`. The stream route emits graph-level node and edge progress, LLM-derived intent, reasoning when available, token chunks, remote tool lifecycle and runtime errors.
+
+## Run an application independently
+
+```bash
+cd express-mcp-chat
+cp .env.example .env
+npm run check
+npm run dev
+```
+
+Use the same flow for each application, then follow its README for framework bootstrap details. To customize the chat behavior, modify `chat-mcp` first. To add another framework, keep its host thin and map the shared graph through the same lifecycle contract.
