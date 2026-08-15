@@ -18,6 +18,9 @@
     "dotenv": "^16.4.7",
     "struxjs-core": "^1.0.6"
   },
+  "overrides": {
+    "@langgraph-toolkit/core": "0.2.2"
+  },
   "devDependencies": {
     "@types/node": "^22.15.0",
     "tsx": "^4.19.1",

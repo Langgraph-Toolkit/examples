@@ -19,5 +19,9 @@ jobs:
         with:
           node-version: 22.14.0
       - run: npm install --global npm@11.5.1
-      - run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Install standalone host dependencies
+        run: |
+          for host in express-mcp-chat fastify-mcp-chat nest-mcp-chat struxjs-mcp-chat; do
+            npm --prefix "$host" install --ignore-scripts --no-audit --no-fund --package-lock=false
+          done
       - run: npm run verify

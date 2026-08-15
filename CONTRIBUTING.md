@@ -14,6 +14,8 @@ Run the narrowest host test while iterating, then run the full contract matrix b
 
 The full matrix includes typecheck, deterministic tests and production builds for all four hosts. Every test must use the local `src/chat-mcp/testing.ts` fixture rather than a live model or MCP endpoint.
 
+Each host pins its direct Core version and uses a package override so the framework adapter resolves that same Core version. Do not remove this override without a compatible adapter release: two physical Core installs make classes with private fields structurally incompatible in TypeScript and can split runtime identity.
+
 ## Canonical lifecycle
 
 Tests must preserve the same observable lifecycle on all hosts: intent and reasoning events; paired `tool_start` and `tool_end` events; token and terminal node events; approval interrupt followed by an explicit resume; and retained state history, replay and fork behavior. An incomplete resume payload must return an HTTP conflict rather than silently substituting `null`.
