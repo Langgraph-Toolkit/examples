@@ -1,6 +1,6 @@
 {
   "name": "langgraph-toolkit-example-nest-mcp-chat",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "description": "",
   "author": "",
@@ -24,8 +24,8 @@
   "dependencies": {
     "@langgraph-toolkit/adapter-nestjs": "0.2.1",
     "@langgraph-toolkit/community": "0.2.1",
-    "@langgraph-toolkit/core": "0.2.1",
-    "@langgraph-toolkit/mcp": "0.2.1",
+    "@langgraph-toolkit/core": "0.2.2",
+    "@langgraph-toolkit/mcp": "0.2.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",

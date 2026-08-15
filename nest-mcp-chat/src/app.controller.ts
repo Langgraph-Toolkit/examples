@@ -4,6 +4,7 @@
  */
 import {
   Body,
+  ConflictException,
   Controller,
   Get,
   HttpCode,
@@ -34,6 +35,13 @@ function required(value: JsonObject, name: string): string {
   if (typeof candidate !== 'string' || candidate.length === 0)
     throw new Error(`${name} is required.`);
   return candidate;
+}
+
+function resumeResponse(value: JsonObject): JsonValue {
+  const response = value.response ?? value.answer;
+  if (response === undefined)
+    throw new ConflictException('resume requires a JSON response or answer field.');
+  return response;
 }
 
 function invocation(value: JsonObject): {
@@ -88,7 +96,7 @@ export class AppController {
     return this.graphs.resume(graphName, {
       ...invocation(body),
       threadId: required(body, 'threadId'),
-      response: body.response ?? body.answer ?? null,
+      response: resumeResponse(body),
     });
   }
 

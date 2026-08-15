@@ -17,8 +17,28 @@ test("StruxJS host adapter exposes canonical Chat-MCP lifecycle without provider
     threadId: "strux-stream",
   })) types.push(event.type);
   assert.ok(types.includes("intent"));
-  assert.ok(types.includes("tool_start") && types.includes("tool_end"));
+  assert.ok(types.includes("reasoning"));
+  const toolStarts = types.filter((type) => type === "tool_start").length;
+  const toolEnds = types.filter((type) => type === "tool_end").length;
+  assert.ok(toolStarts > 0);
+  assert.equal(toolEnds, toolStarts);
+  assert.equal(types.includes("error"), false);
   assert.equal(types.at(-1), "node_end");
+
+  const approval = await adapter.lifecycle.invoke("chat-mcp", {
+    input: { query: "approve this action" },
+    threadId: "strux-approval",
+  });
+  assert.equal(approval.stoppedReason, "interrupt");
+  await assert.rejects(adapter.lifecycle.resume("chat-mcp", {
+    threadId: "strux-unknown-resume",
+    response: { approved: true },
+  }));
+  const resumed = await adapter.lifecycle.resume("chat-mcp", {
+    threadId: "strux-approval",
+    response: { approved: true },
+  });
+  assert.equal(resumed.stoppedReason, "done");
 
   const history = await adapter.lifecycle.history("chat-mcp", "strux-thread");
   const checkpointId = history.at(-1)?.checkpointId;

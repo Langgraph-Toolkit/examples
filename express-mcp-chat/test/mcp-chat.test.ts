@@ -96,7 +96,32 @@ test("Express mounts the complete Chat-MCP HTTP lifecycle", async () => {
     const streamBody = await stream.text();
     assert.match(streamBody, /event: intent/);
     assert.match(streamBody, /event: reasoning/);
+    assert.match(streamBody, /event: tool_start/);
+    assert.match(streamBody, /event: tool_end/);
     assert.match(streamBody, /event: node_end/);
+    assert.doesNotMatch(streamBody, /event: error/);
+    assert.equal((streamBody.match(/event: tool_start/g) ?? []).length, (streamBody.match(/event: tool_end/g) ?? []).length);
+
+    const approval = await fetch(`${base}/invoke`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ input: { query: "approve this action" }, threadId: "express-approval" }),
+    });
+    assert.equal(approval.status, 200);
+    assert.equal((await approval.json() as { stoppedReason: string }).stoppedReason, "interrupt");
+    const invalidResume = await fetch(`${base}/resume`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ threadId: "express-approval" }),
+    });
+    assert.equal(invalidResume.status, 409);
+    const resumed = await fetch(`${base}/resume`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ threadId: "express-approval", response: { approved: true } }),
+    });
+    assert.equal(resumed.status, 200);
+    assert.equal((await resumed.json() as { stoppedReason: string }).stoppedReason, "done");
 
     const state = await fetch(`${base}/state?threadId=express-thread`);
     assert.equal(state.status, 200);

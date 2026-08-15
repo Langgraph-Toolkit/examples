@@ -1,0 +1,23 @@
+name: Verify examples
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chat-mcp-contracts:
+    name: Chat-MCP contract matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+      - run: npm install --global npm@11.5.1
+      - run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+      - run: npm run verify

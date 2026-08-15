@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import "dotenv/config";
 import { Application, HttpServiceProvider, WebSocketServiceProvider, Router, Route } from "struxjs-core";
 import type { Request, Response } from "struxjs-core";
+import { GraphRuntimeError } from "@langgraph-toolkit/core";
 import type { JsonObject, JsonValue } from "@langgraph-toolkit/core";
 import { createStruxJSAdapter, streamReply } from "@langgraph-toolkit/adapter-struxjs";
 import type { ChatMcpResource } from "./src/chat-mcp/server.js";
@@ -29,6 +30,12 @@ function required(value: JsonObject, name: string): string {
   return candidate;
 }
 
+function resumeResponse(value: JsonObject): JsonValue {
+  const response = value.response ?? value.answer;
+  if (response === undefined) throw new GraphRuntimeError("resume requires a JSON response or answer field.");
+  return response;
+}
+
 function invocation(value: JsonObject): { readonly input: JsonObject; readonly threadId?: string } {
   const input = "input" in value ? object(value.input) : value;
   return typeof value.threadId === "string" ? { input, threadId: value.threadId } : { input };
@@ -52,7 +59,7 @@ export async function startStruxJsChatMcp(): Promise<void> {
   });
   Route.post("/resume", async (request: Request<Record<string, string>, Record<string, string>, JsonObject>) => {
     const body = request.body;
-    return adapter.lifecycle.resume(graphName, { ...invocation(body), threadId: required(body, "threadId"), response: body.response ?? body.answer ?? null });
+    return adapter.lifecycle.resume(graphName, { ...invocation(body), threadId: required(body, "threadId"), response: resumeResponse(body) });
   });
   Route.post("/cancel", async (request: Request<Record<string, string>, Record<string, string>, JsonObject>) => ({
     cancelled: adapter.lifecycle.cancel(graphName, required(request.body, "threadId")),

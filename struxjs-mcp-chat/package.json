@@ -1,6 +1,6 @@
 {
   "name": "langgraph-toolkit-example-struxjs-mcp-chat",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,8 +13,8 @@
   "dependencies": {
     "@langgraph-toolkit/adapter-struxjs": "0.2.1",
     "@langgraph-toolkit/community": "0.2.1",
-    "@langgraph-toolkit/core": "0.2.1",
-    "@langgraph-toolkit/mcp": "0.2.1",
+    "@langgraph-toolkit/core": "0.2.2",
+    "@langgraph-toolkit/mcp": "0.2.2",
     "dotenv": "^16.4.7",
     "struxjs-core": "^1.0.6"
   },

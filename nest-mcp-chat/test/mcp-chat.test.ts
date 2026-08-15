@@ -46,7 +46,30 @@ void test('NestJS mounts canonical Chat-MCP invoke, stream and retained lifecycl
       })
       .expect(200);
     assert.match(stream.text, /event: intent/);
+    assert.match(stream.text, /event: reasoning/);
+    assert.match(stream.text, /event: tool_start/);
+    assert.match(stream.text, /event: tool_end/);
     assert.match(stream.text, /event: node_end/);
+    assert.doesNotMatch(stream.text, /event: error/);
+    assert.equal(
+      (stream.text.match(/event: tool_start/g) ?? []).length,
+      (stream.text.match(/event: tool_end/g) ?? []).length,
+    );
+
+    const approval = await request(httpServer)
+      .post('/invoke')
+      .send({ input: { query: 'approve this action' }, threadId: 'nest-approval' })
+      .expect(200);
+    assert.equal((approval.body as { stoppedReason: string }).stoppedReason, 'interrupt');
+    await request(httpServer)
+      .post('/resume')
+      .send({ threadId: 'nest-approval' })
+      .expect(409);
+    const resumed = await request(httpServer)
+      .post('/resume')
+      .send({ threadId: 'nest-approval', response: { approved: true } })
+      .expect(200);
+    assert.equal((resumed.body as { stoppedReason: string }).stoppedReason, 'done');
 
     const history = await request(httpServer)
       .get('/history?threadId=nest-thread')
