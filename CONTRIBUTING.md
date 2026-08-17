@@ -9,8 +9,16 @@ Run the narrowest host test while iterating, then run the full contract matrix b
 | Scope | Command |
 | --- | --- |
 | One host | `npm --prefix <host> run test` |
-| All hosts | `npm run verify` |
+| All hosts | Run `check`, `test`, then `build` in each of the four host folders. |
 | Published package inputs | `npm --prefix <host> pack --dry-run` when a host manifest changes |
+
+```bash
+for host in express-mcp-chat fastify-mcp-chat nest-mcp-chat struxjs-mcp-chat; do
+  npm --prefix "$host" run check
+  npm --prefix "$host" run test
+  npm --prefix "$host" run build
+done
+```
 
 The full matrix includes typecheck, deterministic tests and production builds for all four hosts. Every test must use the local `src/chat-mcp/testing.ts` fixture rather than a live model or MCP endpoint.
 

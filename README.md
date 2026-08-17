@@ -1,40 +1,35 @@
 # Langgraph-Toolkit Chat-MCP examples
 
-This repository contains one **transparent Chat-MCP resource** and four independently runnable framework applications. The graph is not a product preset: its model tiers, MCP connector, state, nodes, edges, routing, approvals, evaluation, retry, fallback and checkpoint lifecycle are readable and editable in [`chat-mcp`](./chat-mcp).
+This repository contains exactly four independently runnable Chat-MCP backend applications. There is no shared application package, workspace package, root TypeScript project, or cross-host source folder.
 
-| Application | Framework responsibility | Start command | Port |
-|---|---|---|---:|
-| [Express Chat-MCP](./express-mcp-chat) | Express server and middleware mounting | `npm run dev` | 3511 |
+| Application | Framework integration | Start command | Port |
+| --- | --- | --- | ---: |
+| [Express Chat-MCP](./express-mcp-chat) | Express server and middleware mount | `npm run dev` | 3511 |
 | [Fastify Chat-MCP](./fastify-mcp-chat) | Fastify plugin registration | `npm run dev` | 3512 |
-| [NestJS Chat-MCP](./nest-mcp-chat) | Nest module, provider and controller integration | `npm run start:dev` | 3000 |
-| [StruxJS Chat-MCP](./struxjs-mcp-chat) | StruxJS application, provider and native router lifecycle | `npm run dev` | 3514 |
+| [NestJS Chat-MCP](./nest-mcp-chat) | Nest module, provider, and controller | `npm run start:dev` | 3000 |
+| [StruxJS Chat-MCP](./struxjs-mcp-chat) | StruxJS application, provider, and native router lifecycle | `npm run dev` | 3514 |
 
-## Resource topology
+## Source ownership
 
-```text
-chat-mcp/
-├── models.ts       explicit model registry and fail-fast validation
-├── state.ts        ChatState fields, reducer, history, snapshots and recovery
-├── tools.ts        typed local tool registry
-├── agents.ts       LLM intent classifier and MCP-aware agents
-├── workflow.ts     visible node, edge and fluent lifecycle composition
-├── server.ts       multi-server MCP resource and graph lifecycle registration
-└── index.ts         public example resource exports
-```
+Each application owns its complete, editable Chat-MCP resource at `src/chat-mcp/`. That resource includes its model registry, typed state, MCP server declaration, LLM-derived intent and agent logic, workflow topology, lifecycle resource, and test helpers. The host source in the same folder mounts that local resource using the framework-native adapter.
 
-Every application imports this graph source only for its composition boundary. No host imports another host, and no package conceals a database-specific workflow. Model configuration is never inferred from provider-specific environment variables: every `.env.example` requires `MODEL_DRIVER`, `MODEL_NAME`, `MODEL_API_KEY`, `MODEL_BASE_URL`, and `MCP_SERVER_URL`.
+No host imports another host. There is no root `chat-mcp` folder, no shared application package, and no root package script that hides a host lifecycle.
 
-## Canonical HTTP lifecycle
-
-All four hosts expose the same routes: `POST /invoke`, `POST /stream`, `POST /resume`, `POST /cancel`, `GET /state`, `GET /history`, `POST /replay`, and `POST /fork`. The stream route emits graph-level node and edge progress, LLM-derived intent, reasoning when available, token chunks, remote tool lifecycle and runtime errors.
-
-## Run an application independently
+## Run one application
 
 ```bash
 cd express-mcp-chat
 cp .env.example .env
+npm install
 npm run check
+npm test
 npm run dev
 ```
 
-Use the same flow for each application, then follow its README for framework bootstrap details. To customize the chat behavior, modify `chat-mcp` first. To add another framework, keep its host thin and map the shared graph through the same lifecycle contract.
+Use the same sequence for Fastify, NestJS, or StruxJS. Read the selected application README for the native route, framework bootstrap, and configuration details.
+
+## Dependency versions
+
+Every application pins released package versions exactly. The current split is intentional: `@langgraph-toolkit/core` and `@langgraph-toolkit/mcp` are published at `0.2.2`; `@langgraph-toolkit/community` and the four host adapters are published at `0.2.1`. The applications use the latest published version of each package rather than inventing an unpublished `0.2.2` pin.
+
+The repository CI installs, typechecks, tests, and builds each of the four applications directly.

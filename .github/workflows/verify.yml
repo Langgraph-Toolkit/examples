@@ -1,14 +1,11 @@
 name: Verify examples
-
 on:
   pull_request:
   push:
     branches: ["main"]
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   chat-mcp-contracts:
     name: Chat-MCP contract matrix
@@ -19,9 +16,11 @@ jobs:
         with:
           node-version: 22.14.0
       - run: npm install --global npm@11.5.1
-      - name: Install standalone host dependencies
+      - name: Verify four standalone hosts
         run: |
           for host in express-mcp-chat fastify-mcp-chat nest-mcp-chat struxjs-mcp-chat; do
             npm --prefix "$host" install --ignore-scripts --no-audit --no-fund --package-lock=false
+            npm --prefix "$host" run check
+            npm --prefix "$host" run test
+            npm --prefix "$host" run build
           done
-      - run: npm run verify
