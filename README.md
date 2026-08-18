@@ -30,6 +30,6 @@ Use the same sequence for Fastify, NestJS, or StruxJS. Read the selected applica
 
 ## Dependency versions
 
-Every application pins released package versions exactly. The current split is intentional: `@langgraph-toolkit/core` and `@langgraph-toolkit/mcp` are published at `0.2.2`; `@langgraph-toolkit/community` and the four host adapters are published at `0.2.1`. The applications use the latest published version of each package rather than inventing an unpublished `0.2.2` pin.
+Every application pins released package versions exactly. As of all toolkit packages (`@langgraph-toolkit/core`, `@langgraph-toolkit/mcp`, `@langgraph-toolkit/community`, and the four host adapters) are published in lockstep at `0.2.3`, and the applications pin that exact version in dependencies and overrides.
 
 The repository CI installs, typechecks, tests, and builds each of the four applications directly.

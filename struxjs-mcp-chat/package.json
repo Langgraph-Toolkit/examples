@@ -11,15 +11,15 @@
     "start": "node dist/struxjs-mcp-chat/bootstrap.js"
   },
   "dependencies": {
-    "@langgraph-toolkit/adapter-struxjs": "0.2.2",
-    "@langgraph-toolkit/community": "0.2.2",
-    "@langgraph-toolkit/core": "0.2.2",
-    "@langgraph-toolkit/mcp": "0.2.2",
+    "@langgraph-toolkit/adapter-struxjs": "0.2.3",
+    "@langgraph-toolkit/community": "0.2.3",
+    "@langgraph-toolkit/core": "0.2.3",
+    "@langgraph-toolkit/mcp": "0.2.3",
     "dotenv": "^16.4.7",
     "struxjs-core": "^1.0.6"
   },
   "overrides": {
-    "@langgraph-toolkit/core": "0.2.2"
+    "@langgraph-toolkit/core": "0.2.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

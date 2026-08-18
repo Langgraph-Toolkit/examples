@@ -11,15 +11,15 @@
     "start": "node dist/fastify-mcp-chat/src/server.js"
   },
   "dependencies": {
-    "@langgraph-toolkit/adapter-fastify": "0.2.2",
-    "@langgraph-toolkit/community": "0.2.2",
-    "@langgraph-toolkit/core": "0.2.2",
-    "@langgraph-toolkit/mcp": "0.2.2",
+    "@langgraph-toolkit/adapter-fastify": "0.2.3",
+    "@langgraph-toolkit/community": "0.2.3",
+    "@langgraph-toolkit/core": "0.2.3",
+    "@langgraph-toolkit/mcp": "0.2.3",
     "dotenv": "^16.4.7",
     "fastify": "^4.29.1"
   },
   "overrides": {
-    "@langgraph-toolkit/core": "0.2.2"
+    "@langgraph-toolkit/core": "0.2.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
